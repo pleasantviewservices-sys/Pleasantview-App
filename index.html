@@ -4971,7 +4971,8 @@ function RouteTab(_ref30) {
     snowDaysShared = _ref30.snowDaysShared,
     setSnowDaysShared = _ref30.setSnowDaysShared,
     displayModeProp = _ref30.displayMode,
-    defaultSeason = _ref30.defaultSeason;
+    defaultSeason = _ref30.defaultSeason,
+    isOwner = _ref30.isOwner;
   var _useState89 = useState("hook1"),
     _useState90 = _slicedToArray(_useState89, 2),
     _dbg = _useState90[0],
@@ -4980,9 +4981,10 @@ function RouteTab(_ref30) {
     _setDbg("mounted");
   }, []);
   var displayMode = displayModeProp || "contact";
-  // Show client if: role is "all", OR client has no assigned employees (unassigned = visible to all), OR this employee is assigned
-  clients = employeeRole && employeeRole !== "all" ? clients.filter(function (c) {
-    return !c.assignedEmployees || c.assignedEmployees.length === 0 || c.assignedEmployees.includes(employee);
+  // Lawn (summer): every employee sees every enrolled client.
+  // Snow (winter): employees only see the clients they are assigned to (owner sees all).
+  clients = defaultSeason === "winter" && !isOwner ? clients.filter(function (c) {
+    return (c.assignedEmployees || []).includes(employee);
   }) : clients;
   var _useState91 = useState(todayStr()),
     _useState92 = _slicedToArray(_useState91, 2),
@@ -7743,9 +7745,9 @@ function ClientsTab(_ref47) {
   };
 
   // Sorted, filtered client list used throughout this tab
-  // Show client if: role is "all", OR client has no assigned employees (unassigned = visible to all), OR this employee is assigned
-  var roleClients = employeeRole && employeeRole !== "all" ? clients.filter(function (c) {
-    return !c.assignedEmployees || c.assignedEmployees.length === 0 || c.assignedEmployees.includes(employee);
+  // Lawn: everyone sees all enrolled clients. Snow: employees only see clients assigned to them (owner sees all).
+  var roleClients = snowDivision && !isOwner ? clients.filter(function (c) {
+    return (c.assignedEmployees || []).includes(employee);
   }) : clients;
   var isSumC = function isSumC(c) {
     var _c$services$summer3, _c$services5;
@@ -8294,7 +8296,7 @@ function ClientsTab(_ref47) {
         marginLeft: "17px",
         marginTop: "2px"
       }
-    }, c.saltBinsCollected && c.saltBinsCollectedAt ? "Collected: ".concat(c.saltBinsCollectedAt) : c.saltBinsOnSiteAt ? "On site since: ".concat(c.saltBinsOnSiteAt) : null)), c.assignedEmployees && c.assignedEmployees.length > 0 && /*#__PURE__*/React.createElement("div", {
+    }, c.saltBinsCollected && c.saltBinsCollectedAt ? "Collected: ".concat(c.saltBinsCollectedAt) : c.saltBinsOnSiteAt ? "On site since: ".concat(c.saltBinsOnSiteAt) : null)), (isMaster || snowDivision) && c.assignedEmployees && c.assignedEmployees.length > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         marginTop: "6px",
         display: "flex",
@@ -8832,7 +8834,7 @@ function ClientsTab(_ref47) {
     onBlur: function onBlur(e) {
       return e.target.style.borderColor = "#33383d";
     }
-  }), /*#__PURE__*/React.createElement(SectionLabel, null, "Assigned Employees"), /*#__PURE__*/React.createElement("div", {
+  }), showWinterFields && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionLabel, null, "Snow Removal \u2014 Assigned Employees"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#0e1012",
       border: "1px solid #33383d",
@@ -8846,7 +8848,7 @@ function ClientsTab(_ref47) {
       color: "#8b939b",
       marginBottom: "10px"
     }
-  }, "Select which employees service this property. Only they will see it in their app. Leave empty to make it visible to everyone."), allEmployees.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "Choose who works this property in Snow Removal. Employees only see the snow clients assigned to them. Summer clients are visible to every employee."), allEmployees.length === 0 ? /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: "13px",
       color: "#4b5259"
@@ -8941,7 +8943,7 @@ function ClientsTab(_ref47) {
       fontFamily: "inherit",
       padding: 0
     }
-  }, "\u2715 Clear assignments (visible to everyone)")), showWinterFields && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionLabel, null, "Salt Bins"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2715 Clear assignments"))), showWinterFields && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionLabel, null, "Salt Bins"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -15133,7 +15135,8 @@ function App() {
     snowDaysShared: snowDays,
     setSnowDaysShared: setSnowDaysShared,
     displayMode: displayMode,
-    defaultSeason: "winter"
+    defaultSeason: "winter",
+    isOwner: isOwner
   })), tab === "shifts" && /*#__PURE__*/React.createElement(ShiftsTab, {
     employees: allEmployeesForShifts,
     employeeRole: employeeRole
@@ -15170,7 +15173,8 @@ function App() {
     snowDaysShared: snowDays,
     setSnowDaysShared: setSnowDaysShared,
     displayMode: displayMode,
-    defaultSeason: "summer"
+    defaultSeason: "summer",
+    isOwner: isOwner
   })), tab === "shifts" && /*#__PURE__*/React.createElement(ShiftsTab, {
     employees: allEmployeesForShifts,
     employeeRole: employeeRole
