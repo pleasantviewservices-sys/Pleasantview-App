@@ -369,6 +369,7 @@ var defaultSummerTasks = function defaultSummerTasks() {
     perimeterTrimmed: false,
     gardensWeeded: false,
     hedgesTrimmed: false,
+    leavesCollected: false,
     propertyBlown: false
   };
 };
@@ -429,6 +430,10 @@ var SUMMER_TASK_CONFIG = [{
 }, {
   key: "hedgesTrimmed",
   label: "Hedges & Bushes Trimmed",
+  icon: ""
+}, {
+  key: "leavesCollected",
+  label: "Leaves Collected",
   icon: ""
 }, {
   key: "propertyBlown",
@@ -1869,6 +1874,13 @@ function SummerChecklist(_ref1) {
       marginBottom: "18px"
     }
   }, /*#__PURE__*/React.createElement(SectionLabel, null, "Services Performed"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "12px",
+      color: "#8b939b",
+      lineHeight: 1.5,
+      margin: "-4px 0 10px"
+    }
+  }, "Not all tasks need to be completed \u2014 only tick what was done on this visit."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gap: "8px"
