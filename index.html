@@ -5005,14 +5005,37 @@ function RouteTab(_ref30) {
     tasksClient = _useState98[0],
     setTasksClient = _useState98[1];
   // carries and snowDays are now shared via Supabase — use props
-  var carries = carriesShared || {};
+  var sk = season === "winter" ? "w:" : ""; // keeps Lawn and Snow routes completely separate
+  var carriesAll = carriesShared || {};
+  var carries = Object.fromEntries(Object.entries(carriesAll).filter(function (_ref31) {
+    var _ref32 = _slicedToArray(_ref31, 1),
+      k = _ref32[0];
+    return k.startsWith("w:") === (season === "winter");
+  }).map(function (_ref33) {
+    var _ref34 = _slicedToArray(_ref33, 2),
+      k = _ref34[0],
+      v = _ref34[1];
+    return [sk ? k.slice(2) : k, v];
+  }));
   // Local dismissed IDs for instant UI removal — plain array, no Set spread issues
   var _useState99 = useState([]),
     _useState100 = _slicedToArray(_useState99, 2),
     localDismissedIds = _useState100[0],
     setLocalDismissedIds = _useState100[1];
   var setCarries = function setCarries(updater) {
-    var next = typeof updater === "function" ? updater(carries) : updater;
+    var view = typeof updater === "function" ? updater(carries) : updater;
+    var other = Object.fromEntries(Object.entries(carriesAll).filter(function (_ref35) {
+      var _ref36 = _slicedToArray(_ref35, 1),
+        k = _ref36[0];
+      return k.startsWith("w:") !== (season === "winter");
+    }));
+    var mine = Object.fromEntries(Object.entries(view).map(function (_ref37) {
+      var _ref38 = _slicedToArray(_ref37, 2),
+        k = _ref38[0],
+        v = _ref38[1];
+      return [sk + k, v];
+    }));
+    var next = _objectSpread(_objectSpread({}, other), mine);
     setCarriesShared(next);
     saveShared(KEYS.carries, next);
   };
@@ -5023,14 +5046,14 @@ function RouteTab(_ref30) {
     });
     // Also persist to carries
     var key = "dismissed-".concat(selectedDate);
-    var next = _objectSpread(_objectSpread({}, carries), {}, _defineProperty({}, key, [].concat(_toConsumableArray(Array.isArray(carries[key]) ? carries[key].filter(function (e) {
-      return e.clientId !== clientId;
-    }) : []), [{
-      clientId: clientId,
-      reason: "Removed for today"
-    }])));
-    setCarriesShared(next);
-    saveShared(KEYS.carries, next);
+    setCarries(function (prev) {
+      return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, key, [].concat(_toConsumableArray(Array.isArray(prev[key]) ? prev[key].filter(function (e) {
+        return e.clientId !== clientId;
+      }) : []), [{
+        clientId: clientId,
+        reason: "Removed for today"
+      }])));
+    });
   };
   var _useState101 = useState(null),
     _useState102 = _slicedToArray(_useState101, 2),
@@ -5078,15 +5101,15 @@ function RouteTab(_ref30) {
     setRescheduleClient = _useState116[1]; // client being rescheduled
   var applyReschedule = function applyReschedule(client, newDate) {
     // Find what their normal scheduled date would be near this week
-    var next = _objectSpread(_objectSpread({}, reschedules), {}, _defineProperty(_defineProperty({}, client.id + "_to", newDate), client.id + "_from", selectedDate));
+    var next = _objectSpread(_objectSpread({}, reschedules), {}, _defineProperty(_defineProperty({}, sk + client.id + "_to", newDate), sk + client.id + "_from", selectedDate));
     setReschedules(next);
     saveReschedules(next);
     setRescheduleClient(null);
   };
   var clearReschedule = function clearReschedule(clientId) {
     var next = _objectSpread({}, reschedules);
-    delete next[clientId + "_to"];
-    delete next[clientId + "_from"];
+    delete next[sk + clientId + "_to"];
+    delete next[sk + clientId + "_from"];
     setReschedules(next);
     saveReschedules(next);
   };
@@ -5259,9 +5282,9 @@ function RouteTab(_ref30) {
   // Clients scheduled for this date (by recurrence or exact date match)
   var scheduled = enrolledForSeason.filter(function (client) {
     // Check one-off reschedule: if client was rescheduled TO this date, include them
-    var rescheduledTo = reschedules[client.id + "_to"] === selectedDate;
+    var rescheduledTo = reschedules[sk + client.id + "_to"] === selectedDate;
     // If client was rescheduled AWAY from their normal day, skip them on their normal day
-    var rescheduledFrom = reschedules[client.id + "_from"] === selectedDate;
+    var rescheduledFrom = reschedules[sk + client.id + "_from"] === selectedDate;
     if (rescheduledTo) return true;
     // Exact date visit already logged
     var hasVisit = services.some(function (s) {
@@ -5269,7 +5292,7 @@ function RouteTab(_ref30) {
     });
     if (hasVisit) return true;
     // Recurring schedule — only applies during summer season (Apr 15 – Nov 15)
-    if (!isSummerSeason(selectedDate)) return false;
+    if (season !== "summer" || !isSummerSeason(selectedDate)) return false;
     if (!client.recurrence || client.recurrence === "None") return false;
     var start = client.recurringFrom;
     if (!start) return false;
@@ -5328,6 +5351,10 @@ function RouteTab(_ref30) {
       _oneDay: entry.oneDay
     }) : null;
   }).filter(Boolean).filter(function (c) {
+    return enrolledForSeason.some(function (e) {
+      return e.id === c.id;
+    });
+  }).filter(function (c) {
     return !allScheduled.find(function (s) {
       return s.id === c.id;
     });
@@ -6010,7 +6037,7 @@ function RouteTab(_ref30) {
         display: "flex",
         gap: "8px"
       }
-    }, reschedules[client.id + "_from"] && /*#__PURE__*/React.createElement("button", {
+    }, reschedules[sk + client.id + "_from"] && /*#__PURE__*/React.createElement("button", {
       onClick: function onClick() {
         return clearReschedule(client.id);
       },
@@ -6503,7 +6530,7 @@ function RouteTab(_ref30) {
       fontSize: "14px",
       lineHeight: 1.5
     }
-  }, "Move this client to a different day. Their permanent schedule stays the same \u2014 this is a one-time change."), reschedules[rescheduleClient.id + "_to"] && /*#__PURE__*/React.createElement("div", {
+  }, "Move this client to a different day. Their permanent schedule stays the same \u2014 this is a one-time change."), reschedules[sk + rescheduleClient.id + "_to"] && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(167,139,250,0.08)",
       border: "1px solid rgba(167,139,250,0.25)",
@@ -6513,7 +6540,7 @@ function RouteTab(_ref30) {
       fontSize: "13px",
       color: "#a78bfa"
     }
-  }, "\u21BA Currently rescheduled to ", reschedules[rescheduleClient.id + "_to"]), /*#__PURE__*/React.createElement("div", {
+  }, "\u21BA Currently rescheduled to ", reschedules[sk + rescheduleClient.id + "_to"]), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: "14px"
     }
@@ -6543,7 +6570,7 @@ function RouteTab(_ref30) {
       day: "numeric"
     });
     var isToday = offset === 0;
-    var isPicked = reschedules[rescheduleClient.id + "_to"] === dateStr;
+    var isPicked = reschedules[sk + rescheduleClient.id + "_to"] === dateStr;
     return /*#__PURE__*/React.createElement("button", {
       key: dateStr,
       onClick: function onClick() {
@@ -6599,7 +6626,7 @@ function RouteTab(_ref30) {
       outline: "none",
       fontFamily: "inherit"
     }
-  })), reschedules[rescheduleClient.id + "_to"] && /*#__PURE__*/React.createElement("button", {
+  })), reschedules[sk + rescheduleClient.id + "_to"] && /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       clearReschedule(rescheduleClient.id);
       setRescheduleClient(null);
@@ -6742,7 +6769,7 @@ function RouteTab(_ref30) {
     },
     employee: employee,
     onSave: (/*#__PURE__*/function () {
-      var _ref33 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(newVisit) {
+      var _ref41 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(newVisit) {
         var existing, next;
         return _regenerator().w(function (_context10) {
           while (1) switch (_context10.n) {
@@ -6764,7 +6791,7 @@ function RouteTab(_ref30) {
         }, _callee10);
       }));
       return function (_x12) {
-        return _ref33.apply(this, arguments);
+        return _ref41.apply(this, arguments);
       };
     }()),
     onClose: function onClose() {
@@ -6786,10 +6813,10 @@ function RouteTab(_ref30) {
 }
 
 // ── SEARCH BAR ────────────────────────────────────────────────────────────────
-function SearchBar(_ref34) {
-  var value = _ref34.value,
-    _onChange4 = _ref34.onChange,
-    placeholder = _ref34.placeholder;
+function SearchBar(_ref42) {
+  var value = _ref42.value,
+    _onChange4 = _ref42.onChange,
+    placeholder = _ref42.placeholder;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative",
@@ -6849,9 +6876,9 @@ function SearchBar(_ref34) {
 }
 
 // ── NOTE TEMPLATES ────────────────────────────────────────────────────────────
-function NoteTemplates(_ref35) {
-  var value = _ref35.value,
-    _onChange5 = _ref35.onChange;
+function NoteTemplates(_ref43) {
+  var value = _ref43.value,
+    _onChange5 = _ref43.onChange;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: "14px"
@@ -6911,11 +6938,11 @@ function NoteTemplates(_ref35) {
 }
 
 // ── MONTHLY SUMMARY ───────────────────────────────────────────────────────────
-function MonthlySummary(_ref36) {
-  var clients = _ref36.clients,
-    summerServices = _ref36.summerServices,
-    winterServices = _ref36.winterServices,
-    onClose = _ref36.onClose;
+function MonthlySummary(_ref44) {
+  var clients = _ref44.clients,
+    summerServices = _ref44.summerServices,
+    winterServices = _ref44.winterServices,
+    onClose = _ref44.onClose;
   var now = new Date();
   var _useState129 = useState(now.getFullYear()),
     _useState130 = _slicedToArray(_useState129, 2),
@@ -7234,8 +7261,8 @@ function MonthlySummary(_ref36) {
 }
 
 // ── BULK SEASON ROLLOVER ──────────────────────────────────────────────────────
-function ArchivesModal(_ref37) {
-  var onClose = _ref37.onClose;
+function ArchivesModal(_ref45) {
+  var onClose = _ref45.onClose;
   var _useState133 = useState([]),
     _useState134 = _slicedToArray(_useState133, 2),
     archives = _useState134[0],
@@ -7398,13 +7425,13 @@ function ArchivesModal(_ref37) {
     }, totalVisits - totalComplete, " partial")));
   })));
 }
-function SeasonRollover(_ref38) {
-  var clients = _ref38.clients,
-    summerServices = _ref38.summerServices,
-    winterServices = _ref38.winterServices,
-    setSummerServices = _ref38.setSummerServices,
-    setWinterServices = _ref38.setWinterServices,
-    onClose = _ref38.onClose;
+function SeasonRollover(_ref46) {
+  var clients = _ref46.clients,
+    summerServices = _ref46.summerServices,
+    winterServices = _ref46.winterServices,
+    setSummerServices = _ref46.setSummerServices,
+    setWinterServices = _ref46.setWinterServices,
+    onClose = _ref46.onClose;
   var _useState135 = useState("summer"),
     _useState136 = _slicedToArray(_useState135, 2),
     season = _useState136[0],
@@ -7619,23 +7646,23 @@ function SeasonRollover(_ref38) {
 }
 
 // ── CLIENTS TAB ───────────────────────────────────────────────────────────────
-function ClientsTab(_ref39) {
+function ClientsTab(_ref47) {
   var _form$services$summer, _form$services, _form$services$winter, _form$services2;
-  var clients = _ref39.clients,
-    setClients = _ref39.setClients,
-    summerServices = _ref39.summerServices,
-    winterServices = _ref39.winterServices,
-    setSummerServices = _ref39.setSummerServices,
-    setWinterServices = _ref39.setWinterServices,
-    employee = _ref39.employee,
-    employeeRole = _ref39.employeeRole,
-    isOwner = _ref39.isOwner,
-    showAddProp = _ref39.showAdd,
-    setShowAddProp = _ref39.setShowAdd,
-    displayMode = _ref39.displayMode,
-    setDisplayMode = _ref39.setDisplayMode,
-    snowDivision = _ref39.snowDivision,
-    master = _ref39.master;
+  var clients = _ref47.clients,
+    setClients = _ref47.setClients,
+    summerServices = _ref47.summerServices,
+    winterServices = _ref47.winterServices,
+    setSummerServices = _ref47.setSummerServices,
+    setWinterServices = _ref47.setWinterServices,
+    employee = _ref47.employee,
+    employeeRole = _ref47.employeeRole,
+    isOwner = _ref47.isOwner,
+    showAddProp = _ref47.showAdd,
+    setShowAddProp = _ref47.setShowAdd,
+    displayMode = _ref47.displayMode,
+    setDisplayMode = _ref47.setDisplayMode,
+    snowDivision = _ref47.snowDivision,
+    master = _ref47.master;
   var isMaster = !!master;
   var _useState143 = useState("all"),
     _useState144 = _slicedToArray(_useState143, 2),
@@ -8031,10 +8058,10 @@ function ClientsTab(_ref39) {
       color: "#4b5259",
       fontWeight: 600
     }
-  }, "SHOW:"), [["contact", "Contact"], ["business", "Business"]].map(function (_ref40) {
-    var _ref41 = _slicedToArray(_ref40, 2),
-      mode = _ref41[0],
-      label = _ref41[1];
+  }, "SHOW:"), [["contact", "Contact"], ["business", "Business"]].map(function (_ref48) {
+    var _ref49 = _slicedToArray(_ref48, 2),
+      mode = _ref49[0],
+      label = _ref49[1];
     return /*#__PURE__*/React.createElement("button", {
       key: mode,
       onClick: function onClick() {
@@ -8065,11 +8092,11 @@ function ClientsTab(_ref39) {
     }
   }, [["all", "All", roleClients.length], ["summer", "Summer", roleClients.filter(isSumC).length], ["winter", "Winter", roleClients.filter(isWinC).length], ["both", "Both", roleClients.filter(function (c) {
     return isSumC(c) && isWinC(c);
-  }).length]].map(function (_ref42) {
-    var _ref43 = _slicedToArray(_ref42, 3),
-      key = _ref43[0],
-      label = _ref43[1],
-      n = _ref43[2];
+  }).length]].map(function (_ref50) {
+    var _ref51 = _slicedToArray(_ref50, 3),
+      key = _ref51[0],
+      label = _ref51[1],
+      n = _ref51[2];
     return /*#__PURE__*/React.createElement("button", {
       key: key,
       onClick: function onClick() {
@@ -8129,7 +8156,7 @@ function ClientsTab(_ref39) {
     }
   }, visibleClients.map(function (c) {
     var _c$services$summer4, _c$services7, _c$services$summer5, _c$services8, _c$services$summer6, _c$services9, _c$services$summer7, _c$services0, _c$services$winter4, _c$services1, _c$services$winter5, _c$services10, _c$services$winter6, _c$services11, _c$services$winter7, _c$services12;
-    var visits = [].concat(_toConsumableArray(summerServices), _toConsumableArray(winterServices)).filter(function (s) {
+    var visits = [].concat(_toConsumableArray(isMaster || !snowDivision ? summerServices : []), _toConsumableArray(isMaster || snowDivision ? winterServices : [])).filter(function (s) {
       return s.clientId === c.id;
     });
     var lastVisit = visits.sort(function (a, b) {
@@ -8351,13 +8378,13 @@ function ClientsTab(_ref39) {
       }
     }, IC.trash)), function () {
       var today = todayStr();
-      var todayVisits = [].concat(_toConsumableArray(summerServices.filter(function (s) {
+      var todayVisits = [].concat(_toConsumableArray((isMaster || !snowDivision ? summerServices : []).filter(function (s) {
         return s.clientId === c.id && s.date === today;
       }).map(function (s) {
         return _objectSpread(_objectSpread({}, s), {}, {
           isSummer: true
         });
-      })), _toConsumableArray(winterServices.filter(function (s) {
+      })), _toConsumableArray((isMaster || snowDivision ? winterServices : []).filter(function (s) {
         return s.clientId === c.id && s.date === today;
       }).map(function (s) {
         return _objectSpread(_objectSpread({}, s), {}, {
@@ -8543,13 +8570,13 @@ function ClientsTab(_ref39) {
         display: "flex",
         gap: "8px"
       }
-    }, opts.map(function (_ref44) {
-      var _ref45 = _slicedToArray(_ref44, 5),
-        key = _ref45[0],
-        label = _ref45[1],
-        su = _ref45[2],
-        wi = _ref45[3],
-        col = _ref45[4];
+    }, opts.map(function (_ref52) {
+      var _ref53 = _slicedToArray(_ref52, 5),
+        key = _ref53[0],
+        label = _ref53[1],
+        su = _ref53[2],
+        wi = _ref53[3],
+        col = _ref53[4];
       var active = sumOn === su && winOn === wi;
       return /*#__PURE__*/React.createElement("button", {
         key: key,
@@ -9203,10 +9230,10 @@ function generateSeasonArchiveReport(archive, logoDataUrl) {
   (clientSnapshot || []).forEach(function (c) {
     clientLookup[c.id] = c;
   });
-  var clientSections = Object.entries(byClient).map(function (_ref46) {
-    var _ref47 = _slicedToArray(_ref46, 2),
-      cid = _ref47[0],
-      cvs = _ref47[1];
+  var clientSections = Object.entries(byClient).map(function (_ref54) {
+    var _ref55 = _slicedToArray(_ref54, 2),
+      cid = _ref55[0],
+      cvs = _ref55[1];
     var c = clientLookup[cid] || {};
     var name = c.name || c.businessName || "Unknown Client";
     var addr = c.address || "";
@@ -9312,10 +9339,10 @@ function generateDayReport(date, clients, summerServices, winterServices, logoDa
 }
 
 // ── DAY REPORT BUTTON ────────────────────────────────────────────────────────
-function DayReportButton(_ref48) {
-  var clients = _ref48.clients,
-    summerServices = _ref48.summerServices,
-    winterServices = _ref48.winterServices;
+function DayReportButton(_ref56) {
+  var clients = _ref56.clients,
+    summerServices = _ref56.summerServices,
+    winterServices = _ref56.winterServices;
   var today = todayStr();
   var _React$useState5 = React.useState(false),
     _React$useState6 = _slicedToArray(_React$useState5, 2),
@@ -9423,12 +9450,12 @@ function generateReport(service, clientName, clientAddr, season, flatConfig, log
 }
 
 // ── SERVICE TAB ───────────────────────────────────────────────────────────────
-function ServiceTab(_ref49) {
-  var season = _ref49.season,
-    clients = _ref49.clients,
-    services = _ref49.services,
-    setServices = _ref49.setServices,
-    employee = _ref49.employee;
+function ServiceTab(_ref57) {
+  var season = _ref57.season,
+    clients = _ref57.clients,
+    services = _ref57.services,
+    setServices = _ref57.setServices,
+    employee = _ref57.employee;
   var isSummer = season === "summer";
   var accent = isSummer ? {
     from: "#5f9230",
@@ -9664,10 +9691,10 @@ function ServiceTab(_ref49) {
       marginBottom: "20px",
       flexWrap: "wrap"
     }
-  }, [["all", "All"], ["complete", "Complete"], ["partial", "Partial"], ["pending", "Pending"]].map(function (_ref50) {
-    var _ref51 = _slicedToArray(_ref50, 2),
-      val = _ref51[0],
-      lbl = _ref51[1];
+  }, [["all", "All"], ["complete", "Complete"], ["partial", "Partial"], ["pending", "Pending"]].map(function (_ref58) {
+    var _ref59 = _slicedToArray(_ref58, 2),
+      val = _ref59[0],
+      lbl = _ref59[1];
     return /*#__PURE__*/React.createElement("button", {
       key: val,
       onClick: function onClick() {
@@ -10079,9 +10106,9 @@ function ServiceTab(_ref49) {
 }
 
 // ── OWNER PIN SCREEN ──────────────────────────────────────────────────────────
-function OwnerPinScreen(_ref52) {
-  var onSuccess = _ref52.onSuccess,
-    onCancel = _ref52.onCancel;
+function OwnerPinScreen(_ref60) {
+  var onSuccess = _ref60.onSuccess,
+    onCancel = _ref60.onCancel;
   var _useState175 = useState(""),
     _useState176 = _slicedToArray(_useState175, 2),
     pin = _useState176[0],
@@ -10330,11 +10357,11 @@ function OwnerPinScreen(_ref52) {
 }
 
 // ── PAVER JOB CARD ────────────────────────────────────────────────────────────
-function PaverJobCard(_ref53) {
-  var job = _ref53.job,
-    onEdit = _ref53.onEdit,
-    onDelete = _ref53.onDelete,
-    accentColor = _ref53.accentColor;
+function PaverJobCard(_ref61) {
+  var job = _ref61.job,
+    onEdit = _ref61.onEdit,
+    onDelete = _ref61.onDelete,
+    accentColor = _ref61.accentColor;
   var _useState187 = useState(false),
     _useState188 = _slicedToArray(_useState187, 2),
     expanded = _useState188[0],
@@ -10790,10 +10817,10 @@ function PaverJobCard(_ref53) {
 }
 
 // ── PAVER JOB FORM ────────────────────────────────────────────────────────────
-function PaverJobForm(_ref54) {
-  var job = _ref54.job,
-    onSave = _ref54.onSave,
-    onClose = _ref54.onClose;
+function PaverJobForm(_ref62) {
+  var job = _ref62.job,
+    onSave = _ref62.onSave,
+    onClose = _ref62.onClose;
   var blank = function blank() {
     return {
       jobName: "",
@@ -11439,10 +11466,10 @@ function HardscapingClientsManager() {
     }
   }));
 }
-function HscClientForm(_ref55) {
-  var client = _ref55.client,
-    onSave = _ref55.onSave,
-    onClose = _ref55.onClose;
+function HscClientForm(_ref63) {
+  var client = _ref63.client,
+    onSave = _ref63.onSave,
+    onClose = _ref63.onClose;
   var _React$useState15 = React.useState(client ? {
       name: client.name || "",
       address: client.address || "",
@@ -11558,8 +11585,8 @@ var BLANK_LINE = function BLANK_LINE() {
   };
 };
 var EST_UNITS = ["SqFt", "LnFt", "FcFt", "CuYd", "Pcs", "Bg"];
-function EstimateGenerator(_ref56) {
-  var onBack = _ref56.onBack;
+function EstimateGenerator(_ref64) {
+  var onBack = _ref64.onBack;
   var _useState193 = useState([]),
     _useState194 = _slicedToArray(_useState193, 2),
     estimates = _useState194[0],
@@ -12610,7 +12637,7 @@ function EstimateGenerator(_ref56) {
         },
         value: current.status || "Draft",
         onChange: (/*#__PURE__*/function () {
-          var _ref57 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee28(e) {
+          var _ref65 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee28(e) {
             var updated, next;
             return _regenerator().w(function (_context28) {
               while (1) switch (_context28.n) {
@@ -12630,7 +12657,7 @@ function EstimateGenerator(_ref56) {
             }, _callee28);
           }));
           return function (_x23) {
-            return _ref57.apply(this, arguments);
+            return _ref65.apply(this, arguments);
           };
         }())
       }, ["Draft", "Sent", "Approved", "Declined"].map(function (s) {
@@ -12935,9 +12962,9 @@ function EstimateGenerator(_ref56) {
 }
 
 // ── HARDSCAPING PIPELINE VIEW ─────────────────────────────────────────────────
-function HscPipelineView(_ref58) {
-  var jobs = _ref58.jobs,
-    onEdit = _ref58.onEdit;
+function HscPipelineView(_ref66) {
+  var jobs = _ref66.jobs,
+    onEdit = _ref66.onEdit;
   var PIPELINE_COLS = [{
     key: "Quoted",
     label: "Quoted",
@@ -13615,13 +13642,13 @@ function PaversTab() {
 }
 
 // ── SCHEDULE TAB (Summer + Winter toggle) ─────────────────────────────────────
-function ScheduleTab(_ref59) {
-  var clients = _ref59.clients,
-    summerServices = _ref59.summerServices,
-    winterServices = _ref59.winterServices,
-    setSummerServices = _ref59.setSummerServices,
-    setWinterServices = _ref59.setWinterServices,
-    employee = _ref59.employee;
+function ScheduleTab(_ref67) {
+  var clients = _ref67.clients,
+    summerServices = _ref67.summerServices,
+    winterServices = _ref67.winterServices,
+    setSummerServices = _ref67.setSummerServices,
+    setWinterServices = _ref67.setWinterServices,
+    employee = _ref67.employee;
   var _React$useState17 = React.useState("summer"),
     _React$useState18 = _slicedToArray(_React$useState17, 2),
     season = _React$useState18[0],
@@ -13685,10 +13712,10 @@ function ScheduleTab(_ref59) {
 }
 
 // ── TIME PICKER COMPONENT (12-hour) ───────────────────────────────────────────
-function TimePicker(_ref60) {
-  var value = _ref60.value,
-    _onChange6 = _ref60.onChange,
-    label = _ref60.label;
+function TimePicker(_ref68) {
+  var value = _ref68.value,
+    _onChange6 = _ref68.onChange,
+    label = _ref68.label;
   var hours12 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   var minutes = ["00", "15", "30", "45"];
   // Parse stored 24h value → 12h display
@@ -13798,9 +13825,9 @@ function TimePicker(_ref60) {
 }
 
 // ── SHIFTS TAB ────────────────────────────────────────────────────────────────
-function ShiftsTab(_ref61) {
-  var employees = _ref61.employees,
-    employeeRole = _ref61.employeeRole;
+function ShiftsTab(_ref69) {
+  var employees = _ref69.employees,
+    employeeRole = _ref69.employeeRole;
   var _React$useState19 = React.useState([]),
     _React$useState20 = _slicedToArray(_React$useState19, 2),
     shifts = _React$useState20[0],
@@ -15074,7 +15101,7 @@ function App() {
     isOwner: isOwner
   }) : division === "hardscaping" ? /*#__PURE__*/React.createElement(PaversTab, null) : division === "snow" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(DayReportButton, {
     clients: clients,
-    summerServices: summerServices,
+    summerServices: [],
     winterServices: winterServices
   }), tab === "clients" && /*#__PURE__*/React.createElement(ClientsTab, {
     clients: clients,
@@ -15113,7 +15140,7 @@ function App() {
   })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(DayReportButton, {
     clients: clients,
     summerServices: summerServices,
-    winterServices: winterServices
+    winterServices: []
   }), tab === "clients" && /*#__PURE__*/React.createElement(ClientsTab, {
     clients: clients,
     setClients: setClients,
