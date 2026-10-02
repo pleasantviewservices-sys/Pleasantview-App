@@ -8169,7 +8169,7 @@ function ClientsTab(_ref47) {
       gap: "10px"
     }
   }, visibleClients.map(function (c) {
-    var _c$services$summer4, _c$services7, _c$services$summer5, _c$services8, _c$services$summer6, _c$services9, _c$services$summer7, _c$services0, _c$services$winter4, _c$services1, _c$services$winter5, _c$services10, _c$services$winter6, _c$services11, _c$services$winter7, _c$services12;
+    var _c$services$summer4, _c$services7, _c$services$summer5, _c$services8, _c$services$summer6, _c$services9, _c$services$summer7, _c$services0, _c$services$winter4, _c$services1, _c$services$winter5, _c$services10, _c$services$winter6, _c$services11, _c$services$winter7, _c$services12, _c$services$winter8, _c$services13;
     var visits = [].concat(_toConsumableArray(isMaster || !snowDivision ? summerServices : []), _toConsumableArray(isMaster || snowDivision ? winterServices : [])).filter(function (s) {
       return s.clientId === c.id;
     });
@@ -8328,7 +8328,25 @@ function ClientsTab(_ref47) {
           fontWeight: 600
         }
       }, name);
-    })), /*#__PURE__*/React.createElement("div", {
+    })), isOwner && (isMaster || snowDivision) && ((_c$services$winter8 = (_c$services13 = c.services) === null || _c$services13 === void 0 ? void 0 : _c$services13.winter) !== null && _c$services$winter8 !== void 0 ? _c$services$winter8 : false) && !(c.assignedEmployees && c.assignedEmployees.length > 0) && /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: "6px",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        background: "rgba(251,191,36,0.08)",
+        border: "1px solid rgba(251,191,36,0.3)",
+        borderRadius: "8px",
+        padding: "6px 10px",
+        fontSize: "12px",
+        color: "#fbbf24",
+        fontWeight: 600
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontWeight: 800
+      }
+    }, "!"), " Unassigned \u2014 no crew can see this snow client. Tap Edit to assign."), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: "8px",
@@ -9486,8 +9504,8 @@ function ServiceTab(_ref57) {
   });
   var defaultTasks = isSummer ? defaultSummerTasks : defaultWinterTasks;
   var enrolledClients = _toConsumableArray(clients).filter(function (c) {
-    var _c$services$summer8, _c$services13, _c$services$winter8, _c$services14;
-    return isSummer ? (_c$services$summer8 = (_c$services13 = c.services) === null || _c$services13 === void 0 ? void 0 : _c$services13.summer) !== null && _c$services$summer8 !== void 0 ? _c$services$summer8 : true : (_c$services$winter8 = (_c$services14 = c.services) === null || _c$services14 === void 0 ? void 0 : _c$services14.winter) !== null && _c$services$winter8 !== void 0 ? _c$services$winter8 : false;
+    var _c$services$summer8, _c$services14, _c$services$winter9, _c$services15;
+    return isSummer ? (_c$services$summer8 = (_c$services14 = c.services) === null || _c$services14 === void 0 ? void 0 : _c$services14.summer) !== null && _c$services$summer8 !== void 0 ? _c$services$summer8 : true : (_c$services$winter9 = (_c$services15 = c.services) === null || _c$services15 === void 0 ? void 0 : _c$services15.winter) !== null && _c$services$winter9 !== void 0 ? _c$services$winter9 : false;
   }).sort(function (a, b) {
     var ma = function () {
       try {
