@@ -1262,15 +1262,18 @@ var CREW_ROLES = [{
   icon: ""
 }];
 
+// Employees (not the owner) only see a client's business name and address. EMP_VIEW is set from the signed-in role in App.
+var EMP_VIEW = false;
 // Primary label based on global display mode: "contact" = name first, "business" = businessName first
 function clientLabel(c, mode) {
   if (!c) return "Unknown";
+  if (EMP_VIEW) return c.businessName || c.name || "Unknown";
   if (mode === "business") return c.businessName || c.name || "Unknown";
   return c.name || c.businessName || "Unknown";
 }
 // Secondary label (the other field)
 function clientLabelSecondary(c, mode) {
-  if (!c) return null;
+  if (!c || EMP_VIEW) return null;
   if (mode === "business") return c.name || null;
   return c.businessName || null;
 }
@@ -3318,7 +3321,7 @@ function EmployeeReportModal(_ref19) {
     var c = clients.find(function (c) {
       return c.id === id;
     });
-    return c ? c.name : id;
+    return c ? EMP_VIEW ? clientLabel(c) : c.name : id;
   };
   var buildJobSummary = function buildJobSummary() {
     if (allToday.length === 0) return "No jobs recorded for this date.";
@@ -3612,10 +3615,10 @@ function ClientHistoryModal(_ref24) {
     return g.tasks;
   });
   return /*#__PURE__*/React.createElement(Modal, {
-    title: "Service History \u2014 ".concat(client.name),
+    title: "Service History \u2014 ".concat(clientLabel(client)),
     onClose: onClose,
     wide: true
-  }, client.businessName && /*#__PURE__*/React.createElement("div", {
+  }, !EMP_VIEW && client.businessName && /*#__PURE__*/React.createElement("div", {
     style: {
       color: "var(--mid)",
       fontSize: "13px",
@@ -3628,7 +3631,7 @@ function ClientHistoryModal(_ref24) {
       color: "var(--green)",
       fontSize: "13px",
       marginBottom: "20px",
-      marginTop: client.businessName ? "0" : "-10px"
+      marginTop: client.businessName && !EMP_VIEW ? "0" : "-10px"
     }
   }, client.address), allServices.length === 0 ? /*#__PURE__*/React.createElement("div", {
     style: {
@@ -4804,7 +4807,7 @@ function QuickLogModal(_ref28) {
     onSave(visit);
   };
   return /*#__PURE__*/React.createElement(Modal, {
-    title: "".concat(isSummer ? "Summer" : "Winter", " Visit \u2014 ").concat(client.name),
+    title: "".concat(isSummer ? "Summer" : "Winter", " Visit \u2014 ").concat(clientLabel(client)),
     onClose: onClose
   }, client.clientNotes && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -7940,7 +7943,7 @@ function ClientsTab(_ref47) {
     });
   });
   var visibleClients = sortedClients.filter(function (c) {
-    return !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.businessName || "").toLowerCase().includes(search.toLowerCase()) || c.address.toLowerCase().includes(search.toLowerCase());
+    return !search || EMP_VIEW && (clientLabel(c) + " " + (c.address || "")).toLowerCase().includes(search.toLowerCase()) || !EMP_VIEW && c.name.toLowerCase().includes(search.toLowerCase()) || (c.businessName || "").toLowerCase().includes(search.toLowerCase()) || !EMP_VIEW && c.address.toLowerCase().includes(search.toLowerCase());
   });
   var showSummerFields = isMaster ? (_form$services$summer = (_form$services = form.services) === null || _form$services === void 0 ? void 0 : _form$services.summer) !== null && _form$services$summer !== void 0 ? _form$services$summer : true : !snowDivision;
   var showWinterFields = isMaster ? (_form$services$winter = (_form$services2 = form.services) === null || _form$services2 === void 0 ? void 0 : _form$services2.winter) !== null && _form$services$winter !== void 0 ? _form$services$winter : false : !!snowDivision;
@@ -8219,7 +8222,7 @@ function ClientsTab(_ref47) {
       fontFamily: "inherit",
       minHeight: "36px"
     }
-  }, "Archives"), /*#__PURE__*/React.createElement("div", {
+  }, "Archives"), !EMP_VIEW && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -8366,7 +8369,7 @@ function ClientsTab(_ref47) {
         fontSize: "13px",
         marginBottom: "2px"
       }
-    }, c.address), c.phone && /*#__PURE__*/React.createElement("div", {
+    }, c.address), !EMP_VIEW && c.phone && /*#__PURE__*/React.createElement("div", {
       style: {
         color: "var(--mid2)",
         fontSize: "12px"
@@ -14763,6 +14766,7 @@ function App() {
     _useState234 = _slicedToArray(_useState233, 2),
     isOwner = _useState234[0],
     setIsOwner = _useState234[1];
+  EMP_VIEW = !isOwner;
   var _useState235 = useState("clients"),
     _useState236 = _slicedToArray(_useState235, 2),
     tab = _useState236[0],
