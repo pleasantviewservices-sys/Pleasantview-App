@@ -498,6 +498,7 @@ var ICO_PATHS = {
   sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
   camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
   chevron: '<polyline points="9 18 15 12 9 6"/>',
+  fence: '<path d="M4 21V8l2-3 2 3v13"/><path d="M10 21V8l2-3 2 3v13"/><path d="M16 21V8l2-3 2 3v13"/><path d="M4 13h16"/><path d="M4 18h16"/>',
   route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>'
 };
 function Ico(_ref) {
@@ -1305,6 +1306,145 @@ var PAVER_PHASES = [{
   label: "Cleanup Complete",
   icon: ""
 }];
+var DECK_PHASES = [{
+  key: "dPermit",
+  label: "Permit & Locates",
+  icon: ""
+}, {
+  key: "dLayout",
+  label: "Layout & Post Holes",
+  icon: ""
+}, {
+  key: "dFootings",
+  label: "Footings Poured",
+  icon: ""
+}, {
+  key: "dFraming",
+  label: "Framing Built",
+  icon: ""
+}, {
+  key: "dDecking",
+  label: "Decking Boards Installed",
+  icon: ""
+}, {
+  key: "dRailings",
+  label: "Railings & Stairs",
+  icon: ""
+}, {
+  key: "dFinish",
+  label: "Skirting / Trim",
+  icon: ""
+}, {
+  key: "dSeal",
+  label: "Stain / Seal Done",
+  icon: ""
+}, {
+  key: "dCleanup",
+  label: "Cleanup Complete",
+  icon: ""
+}];
+var FENCE_PHASES = [{
+  key: "fLine",
+  label: "Property Line & Locates",
+  icon: ""
+}, {
+  key: "fPermit",
+  label: "Permit / Approval",
+  icon: ""
+}, {
+  key: "fHoles",
+  label: "Post Holes Dug",
+  icon: ""
+}, {
+  key: "fPosts",
+  label: "Posts Set",
+  icon: ""
+}, {
+  key: "fRails",
+  label: "Rails / Framing",
+  icon: ""
+}, {
+  key: "fBoards",
+  label: "Boards / Panels Installed",
+  icon: ""
+}, {
+  key: "fGates",
+  label: "Gates Hung",
+  icon: ""
+}, {
+  key: "fSeal",
+  label: "Stain / Seal Done",
+  icon: ""
+}, {
+  key: "fCleanup",
+  label: "Cleanup Complete",
+  icon: ""
+}];
+// Hardscaping sections. Pavers keeps its original data key; Decks & Fence is one section with a Deck/Fence job type.
+var HSC_SECTIONS = {
+  pavers: {
+    id: "pavers",
+    title: "Pavers",
+    storeKey: "pps-pavers",
+    jobNoun: "Paver",
+    hasType: false,
+    ico: "layers",
+    color: "#d4a94a",
+    desc: "Driveways, patios, walkways and retaining walls"
+  },
+  decksfence: {
+    id: "decksfence",
+    title: "Decks & Fence",
+    storeKey: "pps-decksfence",
+    jobNoun: "Deck / Fence",
+    hasType: true,
+    ico: "fence",
+    color: "#c9965a",
+    desc: "Deck builds, fence installs, gates and repairs"
+  }
+};
+function hscPhases(cfg, job) {
+  if (!cfg || !cfg.hasType) return PAVER_PHASES;
+  return (job && job.jobType) === "Fence" ? FENCE_PHASES : DECK_PHASES;
+}
+function hscLabels(cfg, jobType) {
+  if (!cfg || !cfg.hasType) return {
+    typeLabel: "Paver Type",
+    typePh: "e.g. Concrete",
+    colorLabel: "Colour",
+    colorPh: "e.g. Charcoal",
+    sizeLabel: "Square Footage",
+    sizePh: "e.g. 450",
+    orderedLabel: "Sq Ft Ordered",
+    unit: "sq ft",
+    newTitle: "New Paver Job",
+    namePh: "e.g. Smith Driveway Install"
+  };
+  if (jobType === "Fence") return {
+    typeLabel: "Fence Style / Material",
+    typePh: "e.g. Cedar privacy, chain link",
+    colorLabel: "Stain / Colour",
+    colorPh: "e.g. Natural, black",
+    sizeLabel: "Linear Feet",
+    sizePh: "e.g. 120",
+    orderedLabel: "Linear Ft Ordered",
+    unit: "linear ft",
+    newTitle: "New Fence Job",
+    namePh: "e.g. Smith Backyard Fence"
+  };
+  return {
+    typeLabel: "Deck Material",
+    typePh: "e.g. Pressure-treated, composite",
+    colorLabel: "Stain / Colour",
+    colorPh: "e.g. Natural, grey",
+    sizeLabel: "Square Footage",
+    sizePh: "e.g. 300",
+    orderedLabel: "Sq Ft Ordered",
+    unit: "sq ft",
+    newTitle: "New Deck Job",
+    namePh: "e.g. Smith Rear Deck"
+  };
+}
 var STATUS_COLORS = {
   "Quoted": {
     bg: "rgba(120,180,60,0.1)",
@@ -6693,16 +6833,27 @@ function RouteTab(_ref30) {
     });
     var addClient = function addClient(c) {
       // Add a one-day carry entry for today only (carriedFrom = selectedDate so it won't persist)
+      // Also undo any earlier "removed for today" so the client actually comes back
+      setLocalDismissedIds(function (prev) {
+        return prev.filter(function (id) {
+          return id !== c.id;
+        });
+      });
       setCarries(function (prev) {
         var todayCarries = (prev[selectedDate] || []).filter(function (e) {
           return e.clientId !== c.id;
         });
-        return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, selectedDate, [].concat(_toConsumableArray(todayCarries), [{
+        var dKey = "dismissed-".concat(selectedDate);
+        var next = _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, selectedDate, [].concat(_toConsumableArray(todayCarries), [{
           clientId: c.id,
           reason: "Added to route",
           carriedFrom: selectedDate,
           oneDay: true
         }])));
+        if (Array.isArray(prev[dKey])) next[dKey] = prev[dKey].filter(function (e) {
+          return e.clientId !== c.id;
+        });
+        return next;
       });
       setShowAddToRoute(false);
     };
@@ -8883,7 +9034,7 @@ function ClientsTab(_ref47) {
       fontSize: "13px",
       color: "#4b5259"
     }
-  }, "No employees added yet \u2014 add them in the Pavers tab.") : /*#__PURE__*/React.createElement("div", {
+  }, "No employees added yet \u2014 add them in Admin, Manage Employees.") : /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -10393,7 +10544,11 @@ function PaverJobCard(_ref61) {
   var job = _ref61.job,
     onEdit = _ref61.onEdit,
     onDelete = _ref61.onDelete,
-    accentColor = _ref61.accentColor;
+    accentColor = _ref61.accentColor,
+    _ref61$cfg = _ref61.cfg,
+    cfg = _ref61$cfg === void 0 ? HSC_SECTIONS.pavers : _ref61$cfg;
+  var L = hscLabels(cfg, job.jobType);
+  var PHASES = hscPhases(cfg, job);
   var _useState187 = useState(false),
     _useState188 = _slicedToArray(_useState187, 2),
     expanded = _useState188[0],
@@ -10403,12 +10558,13 @@ function PaverJobCard(_ref61) {
     lightbox = _useState190[0],
     setLightbox = _useState190[1];
   var sc = STATUS_COLORS[job.status] || STATUS_COLORS["Quoted"];
-  var phaseDone = PAVER_PHASES.filter(function (p) {
+  var phaseDone = PHASES.filter(function (p) {
     var _job$phases;
     return (_job$phases = job.phases) === null || _job$phases === void 0 ? void 0 : _job$phases[p.key];
   }).length;
-  var phaseTotal = PAVER_PHASES.length;
-  var profit = job.quoteAmount && job.materialsCost ? (parseFloat(job.quoteAmount) - parseFloat(job.materialsCost || 0)).toFixed(2) : null;
+  var phaseTotal = PHASES.length;
+  var matCost = job.materialsCost || job.materialsCoast;
+  var profit = job.quoteAmount && matCost ? (parseFloat(job.quoteAmount) - parseFloat(matCost || 0)).toFixed(2) : null;
   var margin = job.quoteAmount && profit ? Math.round(profit / job.quoteAmount * 100) : null;
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -10452,7 +10608,19 @@ function PaverJobCard(_ref61) {
       fontSize: "16px",
       color: "#eceef0"
     }
-  }, job.jobName), /*#__PURE__*/React.createElement("span", {
+  }, job.jobName), cfg.hasType && job.jobType && /*#__PURE__*/React.createElement("span", {
+    style: {
+      background: "#0e1012",
+      border: "1px solid #33383d",
+      color: "#c9965a",
+      fontSize: "10px",
+      fontWeight: 700,
+      borderRadius: "6px",
+      padding: "2px 8px",
+      letterSpacing: "0.04em",
+      textTransform: "uppercase"
+    }
+  }, job.jobType), /*#__PURE__*/React.createElement("span", {
     style: {
       background: sc.bg,
       border: "1px solid ".concat(sc.border),
@@ -10497,7 +10665,7 @@ function PaverJobCard(_ref61) {
       color: "#8b939b",
       fontSize: "11px"
     }
-  }, job.sqft, " sq ft"), job.quoteAmount && /*#__PURE__*/React.createElement("span", {
+  }, job.sqft, " ", L.unit), job.quoteAmount && /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#fbbf24",
       fontSize: "11px",
@@ -10674,7 +10842,7 @@ function PaverJobCard(_ref61) {
       display: "grid",
       gap: "6px"
     }
-  }, PAVER_PHASES.map(function (p) {
+  }, PHASES.map(function (p) {
     var _job$phases2, _job$phases3, _job$phases4, _job$phases5, _job$phases6, _job$phases7;
     return /*#__PURE__*/React.createElement("div", {
       key: p.key,
@@ -10723,7 +10891,7 @@ function PaverJobCard(_ref61) {
       fontSize: "13px",
       color: "#b8bec4"
     }
-  }, "Type: ", /*#__PURE__*/React.createElement("span", {
+  }, cfg.hasType ? "Material" : "Type", ": ", /*#__PURE__*/React.createElement("span", {
     style: {
       color: "#eceef0",
       fontWeight: 600
@@ -10852,7 +11020,9 @@ function PaverJobCard(_ref61) {
 function PaverJobForm(_ref62) {
   var job = _ref62.job,
     onSave = _ref62.onSave,
-    onClose = _ref62.onClose;
+    onClose = _ref62.onClose,
+    _ref62$cfg = _ref62.cfg,
+    cfg = _ref62$cfg === void 0 ? HSC_SECTIONS.pavers : _ref62$cfg;
   var blank = function blank() {
     return {
       jobName: "",
@@ -10869,6 +11039,7 @@ function PaverJobForm(_ref62) {
       paverType: "",
       paverColor: "",
       supplier: "",
+      jobType: cfg.hasType ? "Deck" : "",
       quoteAmount: "",
       depositAmount: "",
       depositDate: "",
@@ -10890,6 +11061,8 @@ function PaverJobForm(_ref62) {
     from: "#5f9230",
     to: "#78b43c"
   };
+  var L = hscLabels(cfg, form.jobType);
+  var PHASES = hscPhases(cfg, form);
   var f = function f(key) {
     return function (v) {
       return setForm(function (p) {
@@ -10906,7 +11079,7 @@ function PaverJobForm(_ref62) {
     });
   };
   return /*#__PURE__*/React.createElement(Modal, {
-    title: job ? "Edit Job" : "New Paver Job",
+    title: job ? "Edit Job" : L.newTitle,
     onClose: onClose,
     wide: true
   }, /*#__PURE__*/React.createElement("div", {
@@ -10914,12 +11087,17 @@ function PaverJobForm(_ref62) {
       display: "grid",
       gap: "0"
     }
-  }, /*#__PURE__*/React.createElement(SectionLabel, null, "Job Details"), /*#__PURE__*/React.createElement(InputField, {
+  }, /*#__PURE__*/React.createElement(SectionLabel, null, "Job Details"), cfg.hasType && /*#__PURE__*/React.createElement(SelectField, {
+    label: "Job Type",
+    value: form.jobType,
+    onChange: f("jobType"),
+    options: ["Deck", "Fence"]
+  }), /*#__PURE__*/React.createElement(InputField, {
     label: "Job Name",
     value: form.jobName,
     onChange: f("jobName"),
     required: true,
-    placeholder: "e.g. Smith Driveway Install"
+    placeholder: L.namePh
   }), /*#__PURE__*/React.createElement(InputField, {
     label: "Business Name (optional)",
     value: form.businessName,
@@ -10947,7 +11125,7 @@ function PaverJobForm(_ref62) {
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)",
       gap: "10px"
     }
   }, /*#__PURE__*/React.createElement(InputField, {
@@ -10966,11 +11144,11 @@ function PaverJobForm(_ref62) {
     onChange: f("endDate"),
     type: "date"
   }), /*#__PURE__*/React.createElement(InputField, {
-    label: "Square Footage",
+    label: L.sizeLabel,
     value: form.sqft,
     onChange: f("sqft"),
     type: "number",
-    placeholder: "e.g. 450"
+    placeholder: L.sizePh
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: "8px"
@@ -10978,7 +11156,7 @@ function PaverJobForm(_ref62) {
   }, /*#__PURE__*/React.createElement(SectionLabel, null, "Financials")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)",
       gap: "10px"
     }
   }, /*#__PURE__*/React.createElement(InputField, {
@@ -11017,25 +11195,25 @@ function PaverJobForm(_ref62) {
   }, /*#__PURE__*/React.createElement(SectionLabel, null, "Materials")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)",
       gap: "10px"
     }
   }, /*#__PURE__*/React.createElement(InputField, {
-    label: "Paver Type",
+    label: L.typeLabel,
     value: form.paverType,
     onChange: f("paverType"),
-    placeholder: "e.g. Concrete"
+    placeholder: L.typePh
   }), /*#__PURE__*/React.createElement(InputField, {
-    label: "Colour",
+    label: L.colorLabel,
     value: form.paverColor,
     onChange: f("paverColor"),
-    placeholder: "e.g. Charcoal"
+    placeholder: L.colorPh
   }), /*#__PURE__*/React.createElement(InputField, {
     label: "Supplier",
     value: form.supplier,
     onChange: f("supplier")
   }), /*#__PURE__*/React.createElement(InputField, {
-    label: "Sq Ft Ordered",
+    label: L.orderedLabel,
     value: form.sqftOrdered,
     onChange: f("sqftOrdered"),
     type: "number"
@@ -11049,7 +11227,7 @@ function PaverJobForm(_ref62) {
       gap: "6px",
       marginBottom: "14px"
     }
-  }, PAVER_PHASES.map(function (p) {
+  }, PHASES.map(function (p) {
     var _form$phases, _form$phases2, _form$phases3;
     return /*#__PURE__*/React.createElement("div", {
       key: p.key,
@@ -13219,7 +13397,9 @@ function HscPipelineView(_ref66) {
 }
 
 // ── PAVERS TAB ────────────────────────────────────────────────────────────────
-function PaversTab() {
+function HardscapeSection(_ref67) {
+  var cfg = _ref67.cfg,
+    onBack = _ref67.onBack;
   var _useState203 = useState([]),
     _useState204 = _slicedToArray(_useState203, 2),
     jobs = _useState204[0],
@@ -13230,47 +13410,38 @@ function PaversTab() {
     setLoading = _useState206[1];
   var _useState207 = useState(false),
     _useState208 = _slicedToArray(_useState207, 2),
-    pinUnlocked = _useState208[0],
-    setPinUnlocked = _useState208[1];
-  var _useState209 = useState(false),
+    showForm = _useState208[0],
+    setShowForm = _useState208[1];
+  var _useState209 = useState(null),
     _useState210 = _slicedToArray(_useState209, 2),
-    showPin = _useState210[0],
-    setShowPin = _useState210[1];
-  var _useState211 = useState(false),
+    editingJob = _useState210[0],
+    setEditingJob = _useState210[1];
+  var _useState211 = useState("All"),
     _useState212 = _slicedToArray(_useState211, 2),
-    showForm = _useState212[0],
-    setShowForm = _useState212[1];
-  var _useState213 = useState(false),
+    filter = _useState212[0],
+    setFilter = _useState212[1];
+  var _useState213 = useState("All"),
     _useState214 = _slicedToArray(_useState213, 2),
-    showEmpMgr = _useState214[0],
-    setShowEmpMgr = _useState214[1];
-  var _useState215 = useState(null),
+    typeFilter = _useState214[0],
+    setTypeFilter = _useState214[1];
+  var _useState215 = useState(""),
     _useState216 = _slicedToArray(_useState215, 2),
-    editingJob = _useState216[0],
-    setEditingJob = _useState216[1];
-  var _useState217 = useState("All"),
+    search = _useState216[0],
+    setSearch = _useState216[1];
+  var _useState217 = useState("jobs"),
     _useState218 = _slicedToArray(_useState217, 2),
-    filter = _useState218[0],
-    setFilter = _useState218[1];
-  var _useState219 = useState(""),
+    section = _useState218[0],
+    setSection = _useState218[1]; // "jobs" | "estimates" | "clients" | "pipeline"
+  var _useState219 = useState(false),
     _useState220 = _slicedToArray(_useState219, 2),
-    search = _useState220[0],
-    setSearch = _useState220[1];
-  var _useState221 = useState("jobs"),
-    _useState222 = _slicedToArray(_useState221, 2),
-    section = _useState222[0],
-    setSection = _useState222[1]; // "jobs" | "estimates" | "clients" | "pipeline"
-  var _useState223 = useState(false),
-    _useState224 = _slicedToArray(_useState223, 2),
-    pipelineView = _useState224[0],
-    setPipelineView = _useState224[1];
+    pipelineView = _useState220[0],
+    setPipelineView = _useState220[1];
   useEffect(function () {
-    if (!pinUnlocked) return;
-    loadShared(KEYS.pavers).then(function (d) {
+    loadShared(cfg.storeKey).then(function (d) {
       setJobs(d || []);
       setLoading(false);
     });
-  }, [pinUnlocked]);
+  }, [cfg.storeKey]);
   var saveJobs = /*#__PURE__*/function () {
     var _saveJobs = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee29(next) {
       return _regenerator().w(function (_context29) {
@@ -13278,7 +13449,7 @@ function PaversTab() {
           case 0:
             setJobs(next);
             _context29.n = 1;
-            return saveShared(KEYS.pavers, next);
+            return saveShared(cfg.storeKey, next);
           case 1:
             return _context29.a(2);
         }
@@ -13357,73 +13528,33 @@ function PaversTab() {
   }, 0);
   var filtered = jobs.filter(function (j) {
     var matchFilter = filter === "All" || j.status === filter;
+    var matchType = !cfg.hasType || typeFilter === "All" || (j.jobType || "Deck") === typeFilter;
     var matchSearch = !search || j.jobName.toLowerCase().includes(search.toLowerCase()) || j.address.toLowerCase().includes(search.toLowerCase()) || (j.businessName || "").toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
+    return matchFilter && matchType && matchSearch;
   });
-  if (!pinUnlocked) {
-    return /*#__PURE__*/React.createElement("div", {
-      style: {
-        textAlign: "center",
-        padding: "64px 24px"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: "40px",
-        marginBottom: "16px",
-        color: "#d4a94a",
-        lineHeight: 1
-      }
-    }, /*#__PURE__*/React.createElement(Ico, {
-      n: "layers",
-      sw: 1.5
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: "20px",
-        fontWeight: 700,
-        color: "#eceef0",
-        marginBottom: "8px"
-      }
-    }, "Hardscaping"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: "14px",
-        color: "#8b939b",
-        marginBottom: "32px",
-        lineHeight: 1.6
-      }
-    }, "Owner access only. Enter your PIN to continue."), /*#__PURE__*/React.createElement("button", {
-      onClick: function onClick() {
-        return setShowPin(true);
-      },
-      style: {
-        background: "#5f9230",
-        border: "none",
-        borderRadius: "10px",
-        padding: "16px 36px",
-        color: "#fff",
-        fontSize: "16px",
-        fontWeight: 700,
-        cursor: "pointer",
-        fontFamily: "inherit",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "10px"
-      }
-    }, IC.lock, " Unlock"), showPin && /*#__PURE__*/React.createElement(OwnerPinScreen, {
-      onSuccess: function onSuccess() {
-        setPinUnlocked(true);
-        setShowPin(false);
-      },
-      onCancel: function onCancel() {
-        return setShowPin(false);
-      }
-    }));
-  }
-  if (showEmpMgr) return /*#__PURE__*/React.createElement(EmployeeManager, {
-    onBack: function onBack() {
-      return setShowEmpMgr(false);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      background: "none",
+      border: "none",
+      color: cfg.color,
+      fontSize: "13px",
+      fontWeight: 700,
+      cursor: "pointer",
+      fontFamily: "inherit",
+      padding: "0 0 12px"
     }
-  });
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "flex",
+      transform: "rotate(180deg)"
+    }
+  }, /*#__PURE__*/React.createElement(Ico, {
+    n: "chevron"
+  })), " Hardscaping"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       background: "#121416",
@@ -13522,7 +13653,7 @@ function PaversTab() {
       fontWeight: 700,
       color: "#eceef0"
     }
-  }, "Hardscaping"), /*#__PURE__*/React.createElement("p", {
+  }, cfg.title), /*#__PURE__*/React.createElement("p", {
     style: {
       margin: "4px 0 0",
       color: "#8b939b",
@@ -13598,6 +13729,30 @@ function PaversTab() {
         textTransform: "uppercase"
       }
     }, s.label));
+  })), cfg.hasType && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: "6px",
+      marginBottom: "10px"
+    }
+  }, ["All", "Deck", "Fence"].map(function (t) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: t,
+      onClick: function onClick() {
+        return setTypeFilter(t);
+      },
+      style: {
+        background: typeFilter === t ? "rgba(201,150,90,0.16)" : "transparent",
+        border: "1px solid ".concat(typeFilter === t ? "#c9965a" : "#24282c"),
+        borderRadius: "8px",
+        padding: "7px 16px",
+        color: typeFilter === t ? "#c9965a" : "#8b939b",
+        fontSize: "12px",
+        fontWeight: 700,
+        cursor: "pointer",
+        fontFamily: "inherit"
+      }
+    }, t === "All" ? "All types" : t + "s");
   })), /*#__PURE__*/React.createElement(SearchBar, {
     value: search,
     onChange: setSearch,
@@ -13659,12 +13814,14 @@ function PaversTab() {
     return /*#__PURE__*/React.createElement(PaverJobCard, {
       key: job.id,
       job: job,
+      cfg: cfg,
       onEdit: openEdit,
       onDelete: handleDelete,
       accentColor: "#78b43c"
     });
   }), showForm && /*#__PURE__*/React.createElement(PaverJobForm, {
     job: editingJob,
+    cfg: cfg,
     onSave: handleSave,
     onClose: function onClose() {
       setShowForm(false);
@@ -13672,15 +13829,194 @@ function PaversTab() {
     }
   })));
 }
+function HardscapingHub() {
+  var _useState221 = useState(false),
+    _useState222 = _slicedToArray(_useState221, 2),
+    pinUnlocked = _useState222[0],
+    setPinUnlocked = _useState222[1];
+  var _useState223 = useState(false),
+    _useState224 = _slicedToArray(_useState223, 2),
+    showPin = _useState224[0],
+    setShowPin = _useState224[1];
+  var _useState225 = useState(null),
+    _useState226 = _slicedToArray(_useState225, 2),
+    sub = _useState226[0],
+    setSub = _useState226[1]; // null | "pavers" | "decksfence"
+
+  if (!pinUnlocked) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center",
+        padding: "64px 24px"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "40px",
+        marginBottom: "16px",
+        color: "#d4a94a",
+        lineHeight: 1
+      }
+    }, /*#__PURE__*/React.createElement(Ico, {
+      n: "layers",
+      sw: 1.5
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "20px",
+        fontWeight: 700,
+        color: "#eceef0",
+        marginBottom: "8px"
+      }
+    }, "Hardscaping"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "14px",
+        color: "#8b939b",
+        marginBottom: "32px",
+        lineHeight: 1.6
+      }
+    }, "Owner access only. Enter your PIN to continue."), /*#__PURE__*/React.createElement("button", {
+      onClick: function onClick() {
+        return setShowPin(true);
+      },
+      style: {
+        background: "#5f9230",
+        border: "none",
+        borderRadius: "10px",
+        padding: "16px 36px",
+        color: "#fff",
+        fontSize: "16px",
+        fontWeight: 700,
+        cursor: "pointer",
+        fontFamily: "inherit",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px"
+      }
+    }, IC.lock, " Unlock"), showPin && /*#__PURE__*/React.createElement(OwnerPinScreen, {
+      onSuccess: function onSuccess() {
+        setPinUnlocked(true);
+        setShowPin(false);
+      },
+      onCancel: function onCancel() {
+        return setShowPin(false);
+      }
+    }));
+  }
+  if (sub) return /*#__PURE__*/React.createElement(HardscapeSection, {
+    key: sub,
+    cfg: HSC_SECTIONS[sub],
+    onBack: function onBack() {
+      return setSub(null);
+    }
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      paddingTop: "12px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: "24px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "12px",
+      color: "#8b939b",
+      textTransform: "uppercase",
+      letterSpacing: "0.1em",
+      marginBottom: "6px"
+    }
+  }, "Hardscaping"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "24px",
+      fontWeight: 700,
+      color: "#eceef0",
+      letterSpacing: "-0.02em"
+    }
+  }, "Choose a section")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px"
+    }
+  }, Object.values(HSC_SECTIONS).map(function (x) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: x.id,
+      onClick: function onClick() {
+        return setSub(x.id);
+      },
+      style: {
+        background: "#16191c",
+        border: "1px solid #24282c",
+        borderRadius: "8px",
+        padding: "16px",
+        textAlign: "left",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        display: "flex",
+        alignItems: "center",
+        gap: "14px"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 44,
+        height: 44,
+        borderRadius: "8px",
+        border: "1px solid #2e343a",
+        background: "#0e1012",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: x.color,
+        fontSize: "22px",
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement(Ico, {
+      n: x.ico
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "16px",
+        fontWeight: 600,
+        color: "#eceef0",
+        marginBottom: "2px",
+        letterSpacing: "-0.01em"
+      }
+    }, x.title), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: "13px",
+        color: "#8b939b",
+        lineHeight: 1.45
+      }
+    }, x.desc)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#4b5259",
+        fontSize: "18px",
+        display: "flex"
+      }
+    }, /*#__PURE__*/React.createElement(Ico, {
+      n: "chevron"
+    })));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: "16px",
+      fontSize: "12px",
+      color: "#6b737b",
+      lineHeight: 1.5
+    }
+  }, "Estimates and the Hardscaping client list are shared between both sections."));
+}
 
 // ── SCHEDULE TAB (Summer + Winter toggle) ─────────────────────────────────────
-function ScheduleTab(_ref67) {
-  var clients = _ref67.clients,
-    summerServices = _ref67.summerServices,
-    winterServices = _ref67.winterServices,
-    setSummerServices = _ref67.setSummerServices,
-    setWinterServices = _ref67.setWinterServices,
-    employee = _ref67.employee;
+function ScheduleTab(_ref68) {
+  var clients = _ref68.clients,
+    summerServices = _ref68.summerServices,
+    winterServices = _ref68.winterServices,
+    setSummerServices = _ref68.setSummerServices,
+    setWinterServices = _ref68.setWinterServices,
+    employee = _ref68.employee;
   var _React$useState17 = React.useState("summer"),
     _React$useState18 = _slicedToArray(_React$useState17, 2),
     season = _React$useState18[0],
@@ -13744,10 +14080,10 @@ function ScheduleTab(_ref67) {
 }
 
 // ── TIME PICKER COMPONENT (12-hour) ───────────────────────────────────────────
-function TimePicker(_ref68) {
-  var value = _ref68.value,
-    _onChange6 = _ref68.onChange,
-    label = _ref68.label;
+function TimePicker(_ref69) {
+  var value = _ref69.value,
+    _onChange6 = _ref69.onChange,
+    label = _ref69.label;
   var hours12 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   var minutes = ["00", "15", "30", "45"];
   // Parse stored 24h value → 12h display
@@ -13857,9 +14193,9 @@ function TimePicker(_ref68) {
 }
 
 // ── SHIFTS TAB ────────────────────────────────────────────────────────────────
-function ShiftsTab(_ref69) {
-  var employees = _ref69.employees,
-    employeeRole = _ref69.employeeRole;
+function ShiftsTab(_ref70) {
+  var employees = _ref70.employees,
+    employeeRole = _ref70.employeeRole;
   var _React$useState19 = React.useState([]),
     _React$useState20 = _slicedToArray(_React$useState19, 2),
     shifts = _React$useState20[0],
@@ -14275,7 +14611,7 @@ function ShiftsTab(_ref69) {
       fontSize: "13px",
       color: "#4b5259"
     }
-  }, "No employees added yet \u2014 add them in the Pavers tab.") : /*#__PURE__*/React.createElement("div", {
+  }, "No employees added yet \u2014 add them in Admin, Manage Employees.") : /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -14378,60 +14714,60 @@ function ShiftsTab(_ref69) {
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
-  var _useState225 = useState(function () {
+  var _useState227 = useState(function () {
       try {
         return localStorage.getItem(KEYS.savedEmployee) ? "app" : "login";
       } catch (_unused12) {
         return "login";
       }
     }),
-    _useState226 = _slicedToArray(_useState225, 2),
-    screen = _useState226[0],
-    setScreen = _useState226[1];
-  var _useState227 = useState(function () {
+    _useState228 = _slicedToArray(_useState227, 2),
+    screen = _useState228[0],
+    setScreen = _useState228[1];
+  var _useState229 = useState(function () {
       try {
         return localStorage.getItem(KEYS.savedEmployee) || null;
       } catch (_unused13) {
         return null;
       }
     }),
-    _useState228 = _slicedToArray(_useState227, 2),
-    employee = _useState228[0],
-    setEmployee = _useState228[1];
-  var _useState229 = useState(function () {
+    _useState230 = _slicedToArray(_useState229, 2),
+    employee = _useState230[0],
+    setEmployee = _useState230[1];
+  var _useState231 = useState(function () {
       try {
         return localStorage.getItem(KEYS.savedRole) || "all";
       } catch (_unused14) {
         return "all";
       }
     }),
-    _useState230 = _slicedToArray(_useState229, 2),
-    employeeRole = _useState230[0],
-    setEmployeeRole = _useState230[1];
-  var _useState231 = useState(function () {
+    _useState232 = _slicedToArray(_useState231, 2),
+    employeeRole = _useState232[0],
+    setEmployeeRole = _useState232[1];
+  var _useState233 = useState(function () {
       try {
         return localStorage.getItem("pps-isowner") === "true";
       } catch (_unused15) {
         return false;
       }
     }),
-    _useState232 = _slicedToArray(_useState231, 2),
-    isOwner = _useState232[0],
-    setIsOwner = _useState232[1];
-  var _useState233 = useState("clients"),
     _useState234 = _slicedToArray(_useState233, 2),
-    tab = _useState234[0],
-    setTab = _useState234[1];
-  var _useState235 = useState(function () {
+    isOwner = _useState234[0],
+    setIsOwner = _useState234[1];
+  var _useState235 = useState("clients"),
+    _useState236 = _slicedToArray(_useState235, 2),
+    tab = _useState236[0],
+    setTab = _useState236[1];
+  var _useState237 = useState(function () {
       try {
         return localStorage.getItem("pps-division") || null;
       } catch (_unused16) {
         return null;
       }
     }),
-    _useState236 = _slicedToArray(_useState235, 2),
-    division = _useState236[0],
-    setDivision = _useState236[1];
+    _useState238 = _slicedToArray(_useState237, 2),
+    division = _useState238[0],
+    setDivision = _useState238[1];
   var setDiv = function setDiv(d) {
     setDivision(d);
     try {
@@ -14444,30 +14780,30 @@ function App() {
       }, "");
     }
   };
-  var _useState237 = useState(false),
-    _useState238 = _slicedToArray(_useState237, 2),
-    showAddClient = _useState238[0],
-    setShowAddClient = _useState238[1];
   var _useState239 = useState(false),
     _useState240 = _slicedToArray(_useState239, 2),
-    showAdmin = _useState240[0],
-    setShowAdmin = _useState240[1];
+    showAddClient = _useState240[0],
+    setShowAddClient = _useState240[1];
   var _useState241 = useState(false),
     _useState242 = _slicedToArray(_useState241, 2),
-    showEmployeeReport = _useState242[0],
-    setShowEmployeeReport = _useState242[1];
-  var _useState243 = useState(null),
+    showAdmin = _useState242[0],
+    setShowAdmin = _useState242[1];
+  var _useState243 = useState(false),
     _useState244 = _slicedToArray(_useState243, 2),
-    backupConfirm = _useState244[0],
-    setBackupConfirm = _useState244[1]; // null | 'export' | 'import'
+    showEmployeeReport = _useState244[0],
+    setShowEmployeeReport = _useState244[1];
   var _useState245 = useState(null),
     _useState246 = _slicedToArray(_useState245, 2),
-    pendingImportFile = _useState246[0],
-    setPendingImportFile = _useState246[1];
+    backupConfirm = _useState246[0],
+    setBackupConfirm = _useState246[1]; // null | 'export' | 'import'
   var _useState247 = useState(null),
     _useState248 = _slicedToArray(_useState247, 2),
-    adminSection = _useState248[0],
-    setAdminSection = _useState248[1]; // null | "report" | "rollover" | "employees"
+    pendingImportFile = _useState248[0],
+    setPendingImportFile = _useState248[1];
+  var _useState249 = useState(null),
+    _useState250 = _slicedToArray(_useState249, 2),
+    adminSection = _useState250[0],
+    setAdminSection = _useState250[1]; // null | "report" | "rollover" | "employees"
 
   // Handle Android/browser back button
   useEffect(function () {
@@ -14521,52 +14857,52 @@ function App() {
       return setAllEmployeesForShifts(d || []);
     });
   }, []);
-  var _useState249 = useState(false),
-    _useState250 = _slicedToArray(_useState249, 2),
-    loading = _useState250[0],
-    setLoading = _useState250[1];
-  var _useState251 = useState(null),
+  var _useState251 = useState(false),
     _useState252 = _slicedToArray(_useState251, 2),
-    lastSync = _useState252[0],
-    setLastSync = _useState252[1];
-  var _useState253 = useState(false),
+    loading = _useState252[0],
+    setLoading = _useState252[1];
+  var _useState253 = useState(null),
     _useState254 = _slicedToArray(_useState253, 2),
-    syncing = _useState254[0],
-    setSyncing = _useState254[1];
-  var _useState255 = useState([]),
+    lastSync = _useState254[0],
+    setLastSync = _useState254[1];
+  var _useState255 = useState(false),
     _useState256 = _slicedToArray(_useState255, 2),
-    clients = _useState256[0],
-    setClients = _useState256[1];
+    syncing = _useState256[0],
+    setSyncing = _useState256[1];
   var _useState257 = useState([]),
     _useState258 = _slicedToArray(_useState257, 2),
-    summerServices = _useState258[0],
-    setSummerServices = _useState258[1];
+    clients = _useState258[0],
+    setClients = _useState258[1];
   var _useState259 = useState([]),
     _useState260 = _slicedToArray(_useState259, 2),
-    winterServices = _useState260[0],
-    setWinterServices = _useState260[1];
+    summerServices = _useState260[0],
+    setSummerServices = _useState260[1];
   var _useState261 = useState([]),
     _useState262 = _slicedToArray(_useState261, 2),
-    paverJobs = _useState262[0],
-    setPaverJobs = _useState262[1];
-  var _useState263 = useState({}),
+    winterServices = _useState262[0],
+    setWinterServices = _useState262[1];
+  var _useState263 = useState([]),
     _useState264 = _slicedToArray(_useState263, 2),
-    carries = _useState264[0],
-    setCarriesShared = _useState264[1];
+    paverJobs = _useState264[0],
+    setPaverJobs = _useState264[1];
   var _useState265 = useState({}),
     _useState266 = _slicedToArray(_useState265, 2),
-    snowDays = _useState266[0],
-    setSnowDaysShared = _useState266[1];
-  var _useState267 = useState(function () {
+    carries = _useState266[0],
+    setCarriesShared = _useState266[1];
+  var _useState267 = useState({}),
+    _useState268 = _slicedToArray(_useState267, 2),
+    snowDays = _useState268[0],
+    setSnowDaysShared = _useState268[1];
+  var _useState269 = useState(function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
       } catch (_unused19) {
         return "contact";
       }
     }),
-    _useState268 = _slicedToArray(_useState267, 2),
-    displayMode = _useState268[0],
-    setDisplayMode = _useState268[1];
+    _useState270 = _slicedToArray(_useState269, 2),
+    displayMode = _useState270[0],
+    setDisplayMode = _useState270[1];
   var syncData = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee34() {
     var quiet,
       _yield$Promise$all,
@@ -15010,7 +15346,7 @@ function App() {
     id: "hard",
     ico: "layers",
     t: "Hardscaping",
-    d: "Paver jobs, quotes, invoices and project tracking",
+    d: "Pavers, decks and fence: jobs, quotes and invoices",
     c: "#d4a94a",
     go: function go() {
       return setDiv("hardscaping");
@@ -15131,7 +15467,7 @@ function App() {
     displayMode: displayMode,
     setDisplayMode: setDisplayMode,
     isOwner: isOwner
-  }) : division === "hardscaping" ? /*#__PURE__*/React.createElement(PaversTab, null) : division === "snow" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(DayReportButton, {
+  }) : division === "hardscaping" ? /*#__PURE__*/React.createElement(HardscapingHub, null) : division === "snow" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(DayReportButton, {
     clients: clients,
     summerServices: [],
     winterServices: winterServices
