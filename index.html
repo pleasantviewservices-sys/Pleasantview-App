@@ -1155,6 +1155,29 @@ var isFullyComplete = function isFullyComplete(t) {
 var todayStr = function todayStr() {
   return new Date().toISOString().split("T")[0];
 };
+// Business-day helpers (Toronto time) for the combined end-of-day report
+var torontoDate = function torontoDate(d) {
+  return new Date(d || Date.now()).toLocaleDateString("en-CA", {
+    timeZone: "America/Toronto"
+  });
+};
+// Remember who completed each task and when, so a visit shared by two people can be attributed correctly
+function buildTaskLog(existing, tasks, employee, now) {
+  var prev = (existing === null || existing === void 0 ? void 0 : existing.taskLog) || {},
+    log = {};
+  Object.keys(tasks || {}).forEach(function (k) {
+    var _existing$tasks;
+    if (!tasks[k]) return;
+    if (existing !== null && existing !== void 0 && (_existing$tasks = existing.tasks) !== null && _existing$tasks !== void 0 && _existing$tasks[k]) log[k] = prev[k] || {
+      by: existing.loggedBy || employee,
+      at: existing.loggedAt || now
+    };else log[k] = {
+      by: employee,
+      at: now
+    };
+  });
+  return log;
+}
 function formatTs(iso) {
   var d = new Date(iso);
   return d.toLocaleDateString("en-CA") + "  " + d.toLocaleTimeString("en-US", {
@@ -1505,35 +1528,35 @@ function loadShared(_x) {
   return _loadShared.apply(this, arguments);
 }
 function _loadShared() {
-  _loadShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee36(key) {
-    var res, rows, _t5;
-    return _regenerator().w(function (_context36) {
-      while (1) switch (_context36.p = _context36.n) {
+  _loadShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee37(key) {
+    var res, rows, _t6;
+    return _regenerator().w(function (_context37) {
+      while (1) switch (_context37.p = _context37.n) {
         case 0:
-          _context36.p = 0;
-          _context36.n = 1;
+          _context37.p = 0;
+          _context37.n = 1;
           return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data?key=eq.").concat(encodeURIComponent(key), "&select=value"), {
             headers: sbHeaders()
           });
         case 1:
-          res = _context36.v;
+          res = _context37.v;
           if (res.ok) {
-            _context36.n = 2;
+            _context37.n = 2;
             break;
           }
-          return _context36.a(2, null);
+          return _context37.a(2, null);
         case 2:
-          _context36.n = 3;
+          _context37.n = 3;
           return res.json();
         case 3:
-          rows = _context36.v;
-          return _context36.a(2, rows.length ? rows[0].value : null);
+          rows = _context37.v;
+          return _context37.a(2, rows.length ? rows[0].value : null);
         case 4:
-          _context36.p = 4;
-          _t5 = _context36.v;
-          return _context36.a(2, null);
+          _context37.p = 4;
+          _t6 = _context37.v;
+          return _context37.a(2, null);
       }
-    }, _callee36, null, [[0, 4]]);
+    }, _callee37, null, [[0, 4]]);
   }));
   return _loadShared.apply(this, arguments);
 }
@@ -1541,13 +1564,13 @@ function saveShared(_x2, _x3) {
   return _saveShared.apply(this, arguments);
 } // ── REUSABLE UI ───────────────────────────────────────────────────────────────
 function _saveShared() {
-  _saveShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee37(key, data) {
-    var _t6;
-    return _regenerator().w(function (_context37) {
-      while (1) switch (_context37.p = _context37.n) {
+  _saveShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee38(key, data) {
+    var _t7;
+    return _regenerator().w(function (_context38) {
+      while (1) switch (_context38.p = _context38.n) {
         case 0:
-          _context37.p = 0;
-          _context37.n = 1;
+          _context38.p = 0;
+          _context38.n = 1;
           return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data"), {
             method: "POST",
             headers: _objectSpread(_objectSpread({}, sbHeaders()), {}, {
@@ -1560,15 +1583,15 @@ function _saveShared() {
             })
           });
         case 1:
-          _context37.n = 3;
+          _context38.n = 3;
           break;
         case 2:
-          _context37.p = 2;
-          _t6 = _context37.v;
+          _context38.p = 2;
+          _t7 = _context38.v;
         case 3:
-          return _context37.a(2);
+          return _context38.a(2);
       }
-    }, _callee37, null, [[0, 2]]);
+    }, _callee38, null, [[0, 2]]);
   }));
   return _saveShared.apply(this, arguments);
 }
@@ -2826,23 +2849,23 @@ function uploadPhotoToSupabase(_x5, _x6) {
   return _uploadPhotoToSupabase.apply(this, arguments);
 } // ── PHOTO MANAGER ─────────────────────────────────────────────────────────────
 function _uploadPhotoToSupabase() {
-  _uploadPhotoToSupabase = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee38(dataUrl, filename) {
-    var res, blob, SUPABASE_URL_CONST, SUPABASE_ANON_KEY_CONST, uploadRes, _t7, _t8;
-    return _regenerator().w(function (_context38) {
-      while (1) switch (_context38.p = _context38.n) {
+  _uploadPhotoToSupabase = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee39(dataUrl, filename) {
+    var res, blob, SUPABASE_URL_CONST, SUPABASE_ANON_KEY_CONST, uploadRes, _t8, _t9;
+    return _regenerator().w(function (_context39) {
+      while (1) switch (_context39.p = _context39.n) {
         case 0:
-          _context38.p = 0;
-          _context38.n = 1;
+          _context39.p = 0;
+          _context39.n = 1;
           return fetch(dataUrl);
         case 1:
-          res = _context38.v;
-          _context38.n = 2;
+          res = _context39.v;
+          _context39.n = 2;
           return res.blob();
         case 2:
-          blob = _context38.v;
+          blob = _context39.v;
           SUPABASE_URL_CONST = "https://vqtjlqtgaoggnolrvuub.supabase.co";
           SUPABASE_ANON_KEY_CONST = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxdGpscXRnYW9nZ25vbHJ2dXViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMTQ0ODYsImV4cCI6MjEwNTc5MDQ4Nn0.TAO6guqOzag2D_zhmQ-S_TfK7ZPwg5xXX0tBz3h8y7g";
-          _context38.n = 3;
+          _context39.n = 3;
           return fetch("".concat(SUPABASE_URL_CONST, "/storage/v1/object/photos/").concat(filename), {
             method: "POST",
             headers: {
@@ -2853,26 +2876,26 @@ function _uploadPhotoToSupabase() {
             body: blob
           });
         case 3:
-          uploadRes = _context38.v;
+          uploadRes = _context39.v;
           if (uploadRes.ok) {
-            _context38.n = 5;
+            _context39.n = 5;
             break;
           }
-          _t7 = console;
-          _context38.n = 4;
+          _t8 = console;
+          _context39.n = 4;
           return uploadRes.text();
         case 4:
-          _t7.warn.call(_t7, "Photo upload failed, storing locally", _context38.v);
-          return _context38.a(2, null);
+          _t8.warn.call(_t8, "Photo upload failed, storing locally", _context39.v);
+          return _context39.a(2, null);
         case 5:
-          return _context38.a(2, "".concat(SUPABASE_URL_CONST, "/storage/v1/object/public/photos/").concat(filename));
+          return _context39.a(2, "".concat(SUPABASE_URL_CONST, "/storage/v1/object/public/photos/").concat(filename));
         case 6:
-          _context38.p = 6;
-          _t8 = _context38.v;
-          console.warn("Photo upload error, storing locally", _t8);
-          return _context38.a(2, null);
+          _context39.p = 6;
+          _t9 = _context39.v;
+          console.warn("Photo upload error, storing locally", _t9);
+          return _context39.a(2, null);
       }
-    }, _callee38, null, [[0, 6]]);
+    }, _callee39, null, [[0, 6]]);
   }));
   return _uploadPhotoToSupabase.apply(this, arguments);
 }
@@ -3274,40 +3297,198 @@ function PhotoStrip(_ref18) {
 }
 
 // ── EMPLOYEE REPORT MODAL ─────────────────────────────────────────────────────
-function EmployeeReportModal(_ref19) {
-  var summerServices = _ref19.summerServices,
-    winterServices = _ref19.winterServices,
-    clients = _ref19.clients,
-    selectedDate = _ref19.selectedDate,
-    onClose = _ref19.onClose;
+function SendReportNow(_ref19) {
+  var onBack = _ref19.onBack;
   var _useState29 = useState(""),
     _useState30 = _slicedToArray(_useState29, 2),
-    employeeName = _useState30[0],
-    setEmployeeName = _useState30[1];
-  var _useState31 = useState(""),
+    pin = _useState30[0],
+    setPin = _useState30[1];
+  var _useState31 = useState(torontoDate()),
     _useState32 = _slicedToArray(_useState31, 2),
-    notes = _useState32[0],
-    setNotes = _useState32[1];
+    date = _useState32[0],
+    setDate = _useState32[1];
   var _useState33 = useState(false),
     _useState34 = _slicedToArray(_useState33, 2),
-    sending = _useState34[0],
-    setSending = _useState34[1];
-  var _useState35 = useState(false),
+    busy = _useState34[0],
+    setBusy = _useState34[1];
+  var _useState35 = useState(null),
     _useState36 = _slicedToArray(_useState35, 2),
-    sent = _useState36[0],
-    setSent = _useState36[1];
-  var _useState37 = useState(null),
+    msg = _useState36[0],
+    setMsg = _useState36[1];
+  var go = /*#__PURE__*/function () {
+    var _go = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+      var r, j, _t3;
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.p = _context6.n) {
+          case 0:
+            setBusy(true);
+            setMsg(null);
+            _context6.p = 1;
+            _context6.n = 2;
+            return fetch("".concat(SUPABASE_URL, "/functions/v1/daily-report"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: "Bearer ".concat(SUPABASE_ANON_KEY)
+              },
+              body: JSON.stringify({
+                pin: pin,
+                date: date,
+                force: true
+              })
+            });
+          case 2:
+            r = _context6.v;
+            _context6.n = 3;
+            return r.json().catch(function () {
+              return {};
+            });
+          case 3:
+            j = _context6.v;
+            if (j.ok) setMsg({
+              ok: true,
+              t: j.sent ? "Sent. ".concat(j.visits, " visit").concat(j.visits === 1 ? "" : "s", " and ").concat(j.notes, " crew note").concat(j.notes === 1 ? "" : "s", " for ").concat(date, ".") : j.reason || "Nothing to send for that day."
+            });else setMsg({
+              ok: false,
+              t: j.error === "Unauthorized" ? "Incorrect owner PIN." : j.error === "not_configured" ? "The daily report email is not set up yet." : j.error || "Could not send."
+            });
+            _context6.n = 5;
+            break;
+          case 4:
+            _context6.p = 4;
+            _t3 = _context6.v;
+            setMsg({
+              ok: false,
+              t: "The daily report function is not set up yet, or there is no connection."
+            });
+          case 5:
+            setBusy(false);
+          case 6:
+            return _context6.a(2);
+        }
+      }, _callee6, null, [[1, 4]]);
+    }));
+    function go() {
+      return _go.apply(this, arguments);
+    }
+    return go;
+  }();
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    onClick: onBack,
+    style: {
+      background: "none",
+      border: "none",
+      color: "var(--green)",
+      cursor: "pointer",
+      fontFamily: "inherit",
+      fontWeight: 700,
+      fontSize: "13px",
+      padding: "0 0 14px"
+    }
+  }, "\u2190 Admin"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "13px",
+      color: "var(--dim)",
+      lineHeight: 1.5,
+      marginBottom: "14px"
+    }
+  }, "Emails the combined report for the day to management now. The nightly report still goes out at 11:59pm."), /*#__PURE__*/React.createElement(SectionLabel, null, "Report date"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: date,
+    onChange: function onChange(e) {
+      return setDate(e.target.value);
+    },
+    style: {
+      width: "100%",
+      background: "var(--card2)",
+      border: "1.5px solid var(--line)",
+      borderRadius: "8px",
+      padding: "11px 14px",
+      color: "var(--text)",
+      fontSize: "16px",
+      fontFamily: "inherit",
+      marginBottom: "14px",
+      boxSizing: "border-box"
+    }
+  }), /*#__PURE__*/React.createElement(SectionLabel, null, "Owner PIN"), /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    inputMode: "numeric",
+    value: pin,
+    onChange: function onChange(e) {
+      return setPin(e.target.value);
+    },
+    placeholder: "Owner PIN",
+    style: {
+      width: "100%",
+      background: "var(--card2)",
+      border: "1.5px solid var(--line)",
+      borderRadius: "8px",
+      padding: "11px 14px",
+      color: "var(--text)",
+      fontSize: "16px",
+      fontFamily: "inherit",
+      marginBottom: "14px",
+      boxSizing: "border-box"
+    }
+  }), msg && /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: msg.ok ? "var(--green)" : "#ff8888",
+      fontSize: "13px",
+      marginBottom: "12px",
+      lineHeight: 1.5
+    }
+  }, msg.t), /*#__PURE__*/React.createElement("button", {
+    onClick: go,
+    disabled: busy || !pin,
+    style: {
+      width: "100%",
+      padding: "14px",
+      background: busy || !pin ? "var(--line)" : "var(--greenD)",
+      border: "none",
+      borderRadius: "10px",
+      color: "#fff",
+      fontSize: "15px",
+      fontWeight: 700,
+      cursor: busy || !pin ? "default" : "pointer",
+      fontFamily: "inherit"
+    }
+  }, busy ? "Sending…" : "Send combined report now"));
+}
+function EmployeeReportModal(_ref20) {
+  var summerServices = _ref20.summerServices,
+    winterServices = _ref20.winterServices,
+    clients = _ref20.clients,
+    selectedDate = _ref20.selectedDate,
+    employee = _ref20.employee,
+    onClose = _ref20.onClose;
+  var _useState37 = useState(employee && employee !== "Owner" ? employee : ""),
     _useState38 = _slicedToArray(_useState37, 2),
-    error = _useState38[0],
-    setError = _useState38[1];
+    employeeName = _useState38[0],
+    setEmployeeName = _useState38[1];
+  var _useState39 = useState(""),
+    _useState40 = _slicedToArray(_useState39, 2),
+    notes = _useState40[0],
+    setNotes = _useState40[1];
+  var _useState41 = useState(false),
+    _useState42 = _slicedToArray(_useState41, 2),
+    sending = _useState42[0],
+    setSending = _useState42[1];
+  var _useState43 = useState(false),
+    _useState44 = _slicedToArray(_useState43, 2),
+    sent = _useState44[0],
+    setSent = _useState44[1];
+  var _useState45 = useState(null),
+    _useState46 = _slicedToArray(_useState45, 2),
+    error = _useState46[0],
+    setError = _useState46[1];
 
   // Gather today's services for the selected date
-  var todaySummer = summerServices.filter(function (s) {
-    return s.date === selectedDate;
-  });
-  var todayWinter = winterServices.filter(function (s) {
-    return s.date === selectedDate;
-  });
+  var onDay = function onDay(s) {
+    return s.loggedAt ? torontoDate(s.loggedAt) === selectedDate : s.date === selectedDate;
+  };
+  var todaySummer = summerServices.filter(onDay);
+  var todayWinter = winterServices.filter(onDay);
   var allToday = [].concat(_toConsumableArray(todaySummer.map(function (s) {
     return _objectSpread(_objectSpread({}, s), {}, {
       season: "summer"
@@ -3327,13 +3508,13 @@ function EmployeeReportModal(_ref19) {
     if (allToday.length === 0) return "No jobs recorded for this date.";
     return allToday.map(function (s) {
       var clientName = getClientName(s.clientId);
-      var completedTasks = Object.entries(s.tasks || {}).filter(function (_ref20) {
-        var _ref21 = _slicedToArray(_ref20, 2),
-          v = _ref21[1];
+      var completedTasks = Object.entries(s.tasks || {}).filter(function (_ref21) {
+        var _ref22 = _slicedToArray(_ref21, 2),
+          v = _ref22[1];
         return v;
-      }).map(function (_ref22) {
-        var _ref23 = _slicedToArray(_ref22, 1),
-          k = _ref23[0];
+      }).map(function (_ref23) {
+        var _ref24 = _slicedToArray(_ref23, 1),
+          k = _ref24[0];
         return k;
       });
       var photoCount = (s.photos || []).length;
@@ -3345,78 +3526,60 @@ function EmployeeReportModal(_ref19) {
       }).join("\n") : "");
     }).join("\n\n");
   };
+
+  // The report is saved, then one combined email is sent for the whole crew at 11:59pm (see the daily-report function)
   var sendReport = /*#__PURE__*/function () {
-    var _sendReport = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
-      var summary, allPhotos, photoLinks, payload, res, txt, _t3;
-      return _regenerator().w(function (_context6) {
-        while (1) switch (_context6.p = _context6.n) {
+    var _sendReport = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
+      var id, rec, res, _t4;
+      return _regenerator().w(function (_context7) {
+        while (1) switch (_context7.p = _context7.n) {
           case 0:
             if (employeeName.trim()) {
-              _context6.n = 1;
+              _context7.n = 1;
               break;
             }
             setError("Please enter your name.");
-            return _context6.a(2);
+            return _context7.a(2);
           case 1:
             setSending(true);
             setError(null);
-            summary = buildJobSummary();
-            allPhotos = allToday.flatMap(function (s) {
-              return s.photos || [];
-            });
-            photoLinks = allPhotos.map(function (p) {
-              return p.url;
-            }).filter(Boolean);
-            _context6.p = 2;
-            payload = {
-              service_id: "service_9a5vrfn",
-              template_id: "template_1nra16e",
-              user_id: "st14oyH2o9pbZgA4i",
-              template_params: {
-                employee_name: employeeName.trim(),
-                report_date: selectedDate,
-                job_summary: summary,
-                additional_notes: notes.trim() || "None",
-                photo_links: photoLinks.length > 0 ? photoLinks.join("\n") : "No photos uploaded",
-                job_count: String(allToday.length)
-              }
+            id = Date.now();
+            rec = {
+              id: id,
+              date: selectedDate,
+              employee: employeeName.trim(),
+              notes: notes.trim(),
+              jobCount: allToday.length,
+              submittedAt: new Date().toISOString()
             };
-            _context6.n = 3;
-            return fetch("https://api.emailjs.com/api/v1.0/email/send", {
+            _context7.p = 2;
+            _context7.n = 3;
+            return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data"), {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify(payload)
+              headers: _objectSpread(_objectSpread({}, sbHeaders()), {}, {
+                "Prefer": "resolution=merge-duplicates,return=minimal"
+              }),
+              body: JSON.stringify({
+                key: "pps-dsub-".concat(selectedDate, "-").concat(id, "-").concat(Math.random().toString(36).slice(2, 6)),
+                value: rec,
+                updated_at: rec.submittedAt
+              })
             });
           case 3:
-            res = _context6.v;
-            if (!(res.ok || res.status === 200)) {
-              _context6.n = 4;
-              break;
-            }
-            setSent(true);
-            _context6.n = 6;
+            res = _context7.v;
+            if (res.ok) setSent(true);else setError("Could not save your report. Check your connection and try again.");
+            _context7.n = 5;
             break;
           case 4:
-            _context6.n = 5;
-            return res.text();
+            _context7.p = 4;
+            _t4 = _context7.v;
+            setError("No connection. Try again when you have signal.");
           case 5:
-            txt = _context6.v;
-            setError("Failed to send: " + txt);
-          case 6:
-            _context6.n = 8;
-            break;
-          case 7:
-            _context6.p = 7;
-            _t3 = _context6.v;
-            setError("Network error: " + _t3.message);
-          case 8:
             setSending(false);
-          case 9:
-            return _context6.a(2);
+          case 6:
+            return _context7.a(2);
         }
-      }, _callee6, null, [[2, 7]]);
+      }, _callee7, null, [[2, 4]]);
     }));
     function sendReport() {
       return _sendReport.apply(this, arguments);
@@ -3448,9 +3611,10 @@ function EmployeeReportModal(_ref19) {
   }, "Report submitted!"), /*#__PURE__*/React.createElement("div", {
     style: {
       color: "var(--mid2)",
-      fontSize: "13px"
+      fontSize: "13px",
+      lineHeight: 1.5
     }
-  }, "Your daily report has been sent to management.")));
+  }, "Thanks. It will be included in the combined report for the whole crew, sent to management at 11:59pm.")));
   return /*#__PURE__*/React.createElement(Modal, {
     title: "Submit Daily Report",
     onClose: onClose
@@ -3586,15 +3750,15 @@ function EmployeeReportModal(_ref19) {
       cursor: sending ? "not-allowed" : "pointer",
       opacity: sending ? 0.7 : 1
     }
-  }, sending ? "⏳ Sending…" : "Send Report to Management"));
+  }, sending ? "Saving…" : "Submit Report"));
 }
 
 // ── CLIENT HISTORY MODAL ──────────────────────────────────────────────────────
-function ClientHistoryModal(_ref24) {
-  var client = _ref24.client,
-    summerServices = _ref24.summerServices,
-    winterServices = _ref24.winterServices,
-    onClose = _ref24.onClose;
+function ClientHistoryModal(_ref25) {
+  var client = _ref25.client,
+    summerServices = _ref25.summerServices,
+    winterServices = _ref25.winterServices,
+    onClose = _ref25.onClose;
   var allServices = [].concat(_toConsumableArray(summerServices.filter(function (s) {
     return s.clientId === client.id;
   }).map(function (s) {
@@ -3746,28 +3910,28 @@ function ClientHistoryModal(_ref24) {
 }
 
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
-function LoginScreen(_ref25) {
-  var onLogin = _ref25.onLogin;
-  var _useState39 = useState([]),
-    _useState40 = _slicedToArray(_useState39, 2),
-    employees = _useState40[0],
-    setEmployees = _useState40[1];
-  var _useState41 = useState(true),
-    _useState42 = _slicedToArray(_useState41, 2),
-    loading = _useState42[0],
-    setLoading = _useState42[1];
-  var _useState43 = useState(null),
-    _useState44 = _slicedToArray(_useState43, 2),
-    selected = _useState44[0],
-    setSelected = _useState44[1]; // employee object or "owner"
-  var _useState45 = useState(""),
-    _useState46 = _slicedToArray(_useState45, 2),
-    pin = _useState46[0],
-    setPin = _useState46[1];
-  var _useState47 = useState(""),
+function LoginScreen(_ref26) {
+  var onLogin = _ref26.onLogin;
+  var _useState47 = useState([]),
     _useState48 = _slicedToArray(_useState47, 2),
-    error = _useState48[0],
-    setError = _useState48[1];
+    employees = _useState48[0],
+    setEmployees = _useState48[1];
+  var _useState49 = useState(true),
+    _useState50 = _slicedToArray(_useState49, 2),
+    loading = _useState50[0],
+    setLoading = _useState50[1];
+  var _useState51 = useState(null),
+    _useState52 = _slicedToArray(_useState51, 2),
+    selected = _useState52[0],
+    setSelected = _useState52[1]; // employee object or "owner"
+  var _useState53 = useState(""),
+    _useState54 = _slicedToArray(_useState53, 2),
+    pin = _useState54[0],
+    setPin = _useState54[1];
+  var _useState55 = useState(""),
+    _useState56 = _slicedToArray(_useState55, 2),
+    error = _useState56[0],
+    setError = _useState56[1];
   useEffect(function () {
     loadShared(KEYS.employees).then(function (d) {
       setEmployees(d || []);
@@ -3795,28 +3959,28 @@ function LoginScreen(_ref25) {
     setError("");
   };
   var checkPin = /*#__PURE__*/function () {
-    var _checkPin = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(p) {
+    var _checkPin = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(p) {
       var stored, empPin;
-      return _regenerator().w(function (_context7) {
-        while (1) switch (_context7.n) {
+      return _regenerator().w(function (_context8) {
+        while (1) switch (_context8.n) {
           case 0:
             if (!(selected === "owner")) {
-              _context7.n = 4;
+              _context8.n = 4;
               break;
             }
-            _context7.n = 1;
+            _context8.n = 1;
             return loadShared(KEYS.ownerpin);
           case 1:
-            stored = _context7.v;
+            stored = _context8.v;
             if (stored) {
-              _context7.n = 3;
+              _context8.n = 3;
               break;
             }
-            _context7.n = 2;
+            _context8.n = 2;
             return saveShared(KEYS.ownerpin, p);
           case 2:
             onLogin("Owner", "all", true);
-            return _context7.a(2);
+            return _context8.a(2);
           case 3:
             if (p === stored) {
               onLogin("Owner", "all", true);
@@ -3824,17 +3988,17 @@ function LoginScreen(_ref25) {
               setError("Incorrect owner PIN. Try again.");
               setPin("");
             }
-            return _context7.a(2);
+            return _context8.a(2);
           case 4:
             // Employee path
             empPin = (selected === null || selected === void 0 ? void 0 : selected.pin) || "";
             if (empPin) {
-              _context7.n = 5;
+              _context8.n = 5;
               break;
             }
             setError("No PIN set. Ask the owner to add your PIN.");
             setPin("");
-            return _context7.a(2);
+            return _context8.a(2);
           case 5:
             if (p === empPin) {
               onLogin(selected.name, selected.role || "all");
@@ -3843,9 +4007,9 @@ function LoginScreen(_ref25) {
               setPin("");
             }
           case 6:
-            return _context7.a(2);
+            return _context8.a(2);
         }
-      }, _callee7);
+      }, _callee8);
     }));
     function checkPin(_x0) {
       return _checkPin.apply(this, arguments);
@@ -4125,40 +4289,40 @@ function LoginScreen(_ref25) {
 }
 
 // ── EMPLOYEE MANAGER ──────────────────────────────────────────────────────────
-function EmployeeManager(_ref26) {
-  var onBack = _ref26.onBack;
-  var _useState49 = useState([]),
-    _useState50 = _slicedToArray(_useState49, 2),
-    employees = _useState50[0],
-    setEmployees = _useState50[1],
-    _useState51 = useState(""),
-    _useState52 = _slicedToArray(_useState51, 2),
-    newName = _useState52[0],
-    setNewName = _useState52[1],
-    _useState53 = useState("all"),
-    _useState54 = _slicedToArray(_useState53, 2),
-    newRole = _useState54[0],
-    setNewRole = _useState54[1],
-    _useState55 = useState(""),
-    _useState56 = _slicedToArray(_useState55, 2),
-    newPin = _useState56[0],
-    setNewPin = _useState56[1],
-    _useState57 = useState(true),
+function EmployeeManager(_ref27) {
+  var onBack = _ref27.onBack;
+  var _useState57 = useState([]),
     _useState58 = _slicedToArray(_useState57, 2),
-    loading = _useState58[0],
-    setLoading = _useState58[1];
-  var _useState59 = useState(null),
+    employees = _useState58[0],
+    setEmployees = _useState58[1],
+    _useState59 = useState(""),
     _useState60 = _slicedToArray(_useState59, 2),
-    editingId = _useState60[0],
-    setEditingId = _useState60[1],
+    newName = _useState60[0],
+    setNewName = _useState60[1],
     _useState61 = useState("all"),
     _useState62 = _slicedToArray(_useState61, 2),
-    editRole = _useState62[0],
-    setEditRole = _useState62[1],
+    newRole = _useState62[0],
+    setNewRole = _useState62[1],
     _useState63 = useState(""),
     _useState64 = _slicedToArray(_useState63, 2),
-    editPin = _useState64[0],
-    setEditPin = _useState64[1];
+    newPin = _useState64[0],
+    setNewPin = _useState64[1],
+    _useState65 = useState(true),
+    _useState66 = _slicedToArray(_useState65, 2),
+    loading = _useState66[0],
+    setLoading = _useState66[1];
+  var _useState67 = useState(null),
+    _useState68 = _slicedToArray(_useState67, 2),
+    editingId = _useState68[0],
+    setEditingId = _useState68[1],
+    _useState69 = useState("all"),
+    _useState70 = _slicedToArray(_useState69, 2),
+    editRole = _useState70[0],
+    setEditRole = _useState70[1],
+    _useState71 = useState(""),
+    _useState72 = _slicedToArray(_useState71, 2),
+    editPin = _useState72[0],
+    setEditPin = _useState72[1];
   useEffect(function () {
     loadShared(KEYS.employees).then(function (d) {
       setEmployees(d || []);
@@ -4166,17 +4330,17 @@ function EmployeeManager(_ref26) {
     });
   }, []);
   var save = /*#__PURE__*/function () {
-    var _save = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(list) {
-      return _regenerator().w(function (_context8) {
-        while (1) switch (_context8.n) {
+    var _save = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9(list) {
+      return _regenerator().w(function (_context9) {
+        while (1) switch (_context9.n) {
           case 0:
             setEmployees(list);
-            _context8.n = 1;
+            _context9.n = 1;
             return saveShared(KEYS.employees, list);
           case 1:
-            return _context8.a(2);
+            return _context9.a(2);
         }
-      }, _callee8);
+      }, _callee9);
     }));
     function save(_x1) {
       return _save.apply(this, arguments);
@@ -4566,47 +4730,47 @@ function EmployeeManager(_ref26) {
 
 // ── ROUTE / SCHEDULE TAB ──────────────────────────────────────────────────────
 // ── QUICK LOG MODAL (for Route tab) ──────────────────────────────────────────
-function RouteTasksDrawer(_ref27) {
-  var client = _ref27.client,
-    date = _ref27.date,
-    season = _ref27.season,
-    services = _ref27.services,
-    storageKey = _ref27.storageKey,
-    flatConfig = _ref27.flatConfig,
-    accentColor = _ref27.accentColor,
-    accent = _ref27.accent,
-    employee = _ref27.employee,
-    onSave = _ref27.onSave,
-    onClose = _ref27.onClose;
+function RouteTasksDrawer(_ref28) {
+  var client = _ref28.client,
+    date = _ref28.date,
+    season = _ref28.season,
+    services = _ref28.services,
+    storageKey = _ref28.storageKey,
+    flatConfig = _ref28.flatConfig,
+    accentColor = _ref28.accentColor,
+    accent = _ref28.accent,
+    employee = _ref28.employee,
+    onSave = _ref28.onSave,
+    onClose = _ref28.onClose;
   var isSummer = season === "summer";
   var defaultTasks = isSummer ? defaultSummerTasks() : defaultWinterTasks();
   var existing = services.find(function (s) {
     return s.clientId === client.id && s.date === date;
   });
-  var _useState65 = useState(existing ? _objectSpread({}, existing.tasks) : defaultTasks),
-    _useState66 = _slicedToArray(_useState65, 2),
-    tasks = _useState66[0],
-    setTasks = _useState66[1];
-  var _useState67 = useState((existing === null || existing === void 0 ? void 0 : existing.taskReasons) || {}),
-    _useState68 = _slicedToArray(_useState67, 2),
-    taskReasons = _useState68[0],
-    setTaskReasons = _useState68[1];
-  var _useState69 = useState((existing === null || existing === void 0 ? void 0 : existing.taskTimestamps) || {}),
-    _useState70 = _slicedToArray(_useState69, 2),
-    taskTimestamps = _useState70[0],
-    setTaskTimestamps = _useState70[1];
-  var _useState71 = useState((existing === null || existing === void 0 ? void 0 : existing.weather) || ""),
-    _useState72 = _slicedToArray(_useState71, 2),
-    weather = _useState72[0],
-    setWeather = _useState72[1];
-  var _useState73 = useState((existing === null || existing === void 0 ? void 0 : existing.notes) || ""),
+  var _useState73 = useState(existing ? _objectSpread({}, existing.tasks) : defaultTasks),
     _useState74 = _slicedToArray(_useState73, 2),
-    notes = _useState74[0],
-    setNotes = _useState74[1];
-  var _useState75 = useState((existing === null || existing === void 0 ? void 0 : existing.photos) || []),
+    tasks = _useState74[0],
+    setTasks = _useState74[1];
+  var _useState75 = useState((existing === null || existing === void 0 ? void 0 : existing.taskReasons) || {}),
     _useState76 = _slicedToArray(_useState75, 2),
-    photos = _useState76[0],
-    setPhotos = _useState76[1];
+    taskReasons = _useState76[0],
+    setTaskReasons = _useState76[1];
+  var _useState77 = useState((existing === null || existing === void 0 ? void 0 : existing.taskTimestamps) || {}),
+    _useState78 = _slicedToArray(_useState77, 2),
+    taskTimestamps = _useState78[0],
+    setTaskTimestamps = _useState78[1];
+  var _useState79 = useState((existing === null || existing === void 0 ? void 0 : existing.weather) || ""),
+    _useState80 = _slicedToArray(_useState79, 2),
+    weather = _useState80[0],
+    setWeather = _useState80[1];
+  var _useState81 = useState((existing === null || existing === void 0 ? void 0 : existing.notes) || ""),
+    _useState82 = _slicedToArray(_useState81, 2),
+    notes = _useState82[0],
+    setNotes = _useState82[1];
+  var _useState83 = useState((existing === null || existing === void 0 ? void 0 : existing.photos) || []),
+    _useState84 = _slicedToArray(_useState83, 2),
+    photos = _useState84[0],
+    setPhotos = _useState84[1];
   var allDone = function allDone() {
     var now = new Date();
     var timeStr = now.toLocaleTimeString("en-CA", {
@@ -4638,6 +4802,7 @@ function RouteTasksDrawer(_ref27) {
       recurrence: client.recurrence || "None",
       loggedBy: (existing === null || existing === void 0 ? void 0 : existing.loggedBy) || employee,
       loggedAt: (existing === null || existing === void 0 ? void 0 : existing.loggedAt) || now,
+      taskLog: buildTaskLog(existing, tasks, employee, now),
       updatedBy: existing ? employee : undefined,
       updatedAt: existing ? now : undefined
     };
@@ -4745,47 +4910,47 @@ function RouteTasksDrawer(_ref27) {
     accent: accent
   }));
 }
-function QuickLogModal(_ref28) {
-  var client = _ref28.client,
-    date = _ref28.date,
-    season = _ref28.season,
-    services = _ref28.services,
-    storageKey = _ref28.storageKey,
-    flatConfig = _ref28.flatConfig,
-    accentColor = _ref28.accentColor,
-    accent = _ref28.accent,
-    employee = _ref28.employee,
-    onSave = _ref28.onSave,
-    onClose = _ref28.onClose;
+function QuickLogModal(_ref29) {
+  var client = _ref29.client,
+    date = _ref29.date,
+    season = _ref29.season,
+    services = _ref29.services,
+    storageKey = _ref29.storageKey,
+    flatConfig = _ref29.flatConfig,
+    accentColor = _ref29.accentColor,
+    accent = _ref29.accent,
+    employee = _ref29.employee,
+    onSave = _ref29.onSave,
+    onClose = _ref29.onClose;
   var isSummer = season === "summer";
   var defaultTasks = isSummer ? defaultSummerTasks() : defaultWinterTasks();
   var existing = services.find(function (s) {
     return s.clientId === client.id && s.date === date;
   });
-  var _useState77 = useState(existing ? _objectSpread({}, existing.tasks) : defaultTasks),
-    _useState78 = _slicedToArray(_useState77, 2),
-    tasks = _useState78[0],
-    setTasks = _useState78[1];
-  var _useState79 = useState((existing === null || existing === void 0 ? void 0 : existing.taskReasons) || {}),
-    _useState80 = _slicedToArray(_useState79, 2),
-    taskReasons = _useState80[0],
-    setTaskReasons = _useState80[1];
-  var _useState81 = useState((existing === null || existing === void 0 ? void 0 : existing.taskTimestamps) || {}),
-    _useState82 = _slicedToArray(_useState81, 2),
-    taskTimestamps = _useState82[0],
-    setTaskTimestamps = _useState82[1];
-  var _useState83 = useState((existing === null || existing === void 0 ? void 0 : existing.weather) || ""),
-    _useState84 = _slicedToArray(_useState83, 2),
-    weather = _useState84[0],
-    setWeather = _useState84[1];
-  var _useState85 = useState((existing === null || existing === void 0 ? void 0 : existing.notes) || ""),
+  var _useState85 = useState(existing ? _objectSpread({}, existing.tasks) : defaultTasks),
     _useState86 = _slicedToArray(_useState85, 2),
-    notes = _useState86[0],
-    setNotes = _useState86[1];
-  var _useState87 = useState((existing === null || existing === void 0 ? void 0 : existing.photos) || []),
+    tasks = _useState86[0],
+    setTasks = _useState86[1];
+  var _useState87 = useState((existing === null || existing === void 0 ? void 0 : existing.taskReasons) || {}),
     _useState88 = _slicedToArray(_useState87, 2),
-    photos = _useState88[0],
-    setPhotos = _useState88[1];
+    taskReasons = _useState88[0],
+    setTaskReasons = _useState88[1];
+  var _useState89 = useState((existing === null || existing === void 0 ? void 0 : existing.taskTimestamps) || {}),
+    _useState90 = _slicedToArray(_useState89, 2),
+    taskTimestamps = _useState90[0],
+    setTaskTimestamps = _useState90[1];
+  var _useState91 = useState((existing === null || existing === void 0 ? void 0 : existing.weather) || ""),
+    _useState92 = _slicedToArray(_useState91, 2),
+    weather = _useState92[0],
+    setWeather = _useState92[1];
+  var _useState93 = useState((existing === null || existing === void 0 ? void 0 : existing.notes) || ""),
+    _useState94 = _slicedToArray(_useState93, 2),
+    notes = _useState94[0],
+    setNotes = _useState94[1];
+  var _useState95 = useState((existing === null || existing === void 0 ? void 0 : existing.photos) || []),
+    _useState96 = _slicedToArray(_useState95, 2),
+    photos = _useState96[0],
+    setPhotos = _useState96[1];
   var save = function save() {
     var now = new Date().toISOString();
     var visit = {
@@ -4801,6 +4966,7 @@ function QuickLogModal(_ref28) {
       recurrence: client.recurrence || "None",
       loggedBy: (existing === null || existing === void 0 ? void 0 : existing.loggedBy) || employee,
       loggedAt: (existing === null || existing === void 0 ? void 0 : existing.loggedAt) || now,
+      taskLog: buildTaskLog(existing, tasks, employee, now),
       updatedBy: existing ? employee : undefined,
       updatedAt: existing ? now : undefined
     };
@@ -4873,31 +5039,31 @@ function QuickLogModal(_ref28) {
     accent: accent
   }));
 }
-function QuickNoteModal(_ref29) {
-  var clientId = _ref29.clientId,
-    existingNote = _ref29.existingNote,
-    preVisit = _ref29.preVisit,
-    services = _ref29.services,
-    selectedDate = _ref29.selectedDate,
-    season = _ref29.season,
-    storageKey = _ref29.storageKey,
-    setServices = _ref29.setServices,
-    onClose = _ref29.onClose;
+function QuickNoteModal(_ref30) {
+  var clientId = _ref30.clientId,
+    existingNote = _ref30.existingNote,
+    preVisit = _ref30.preVisit,
+    services = _ref30.services,
+    selectedDate = _ref30.selectedDate,
+    season = _ref30.season,
+    storageKey = _ref30.storageKey,
+    setServices = _ref30.setServices,
+    onClose = _ref30.onClose;
   var _React$useState = React.useState(existingNote),
     _React$useState2 = _slicedToArray(_React$useState, 2),
     noteText = _React$useState2[0],
     setNoteText = _React$useState2[1];
   var saveNote = /*#__PURE__*/function () {
-    var _saveNote = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9() {
+    var _saveNote = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
       var existing, next;
-      return _regenerator().w(function (_context9) {
-        while (1) switch (_context9.n) {
+      return _regenerator().w(function (_context0) {
+        while (1) switch (_context0.n) {
           case 0:
             existing = services.find(function (s) {
               return s.clientId === clientId && s.date === selectedDate;
             });
             if (!existing) {
-              _context9.n = 1;
+              _context0.n = 1;
               break;
             }
             next = services.map(function (s) {
@@ -4906,14 +5072,14 @@ function QuickNoteModal(_ref29) {
               }) : s;
             });
             if (season === "summer") setServices.setSummer(next);else setServices.setWinter(next);
-            _context9.n = 1;
+            _context0.n = 1;
             return saveShared(storageKey, next);
           case 1:
             onClose();
           case 2:
-            return _context9.a(2);
+            return _context0.a(2);
         }
-      }, _callee9);
+      }, _callee0);
     }));
     function saveNote() {
       return _saveNote.apply(this, arguments);
@@ -5123,24 +5289,24 @@ var RouteErrorBoundary = /*#__PURE__*/function (_React$Component2) {
     }
   }]);
 }(React.Component);
-function RouteTab(_ref30) {
-  var clients = _ref30.clients,
-    summerServices = _ref30.summerServices,
-    winterServices = _ref30.winterServices,
-    setServices = _ref30.setServices,
-    employee = _ref30.employee,
-    employeeRole = _ref30.employeeRole,
-    carriesShared = _ref30.carriesShared,
-    setCarriesShared = _ref30.setCarriesShared,
-    snowDaysShared = _ref30.snowDaysShared,
-    setSnowDaysShared = _ref30.setSnowDaysShared,
-    displayModeProp = _ref30.displayMode,
-    defaultSeason = _ref30.defaultSeason,
-    isOwner = _ref30.isOwner;
-  var _useState89 = useState("hook1"),
-    _useState90 = _slicedToArray(_useState89, 2),
-    _dbg = _useState90[0],
-    _setDbg = _useState90[1];
+function RouteTab(_ref31) {
+  var clients = _ref31.clients,
+    summerServices = _ref31.summerServices,
+    winterServices = _ref31.winterServices,
+    setServices = _ref31.setServices,
+    employee = _ref31.employee,
+    employeeRole = _ref31.employeeRole,
+    carriesShared = _ref31.carriesShared,
+    setCarriesShared = _ref31.setCarriesShared,
+    snowDaysShared = _ref31.snowDaysShared,
+    setSnowDaysShared = _ref31.setSnowDaysShared,
+    displayModeProp = _ref31.displayMode,
+    defaultSeason = _ref31.defaultSeason,
+    isOwner = _ref31.isOwner;
+  var _useState97 = useState("hook1"),
+    _useState98 = _slicedToArray(_useState97, 2),
+    _dbg = _useState98[0],
+    _setDbg = _useState98[1];
   React.useEffect(function () {
     _setDbg("mounted");
   }, []);
@@ -5150,55 +5316,55 @@ function RouteTab(_ref30) {
   clients = defaultSeason === "winter" && !isOwner ? clients.filter(function (c) {
     return (c.assignedEmployees || []).includes(employee);
   }) : clients;
-  var _useState91 = useState(todayStr()),
-    _useState92 = _slicedToArray(_useState91, 2),
-    selectedDate = _useState92[0],
-    setSelectedDate = _useState92[1];
+  var _useState99 = useState(todayStr()),
+    _useState100 = _slicedToArray(_useState99, 2),
+    selectedDate = _useState100[0],
+    setSelectedDate = _useState100[1];
   // Clear local dismissed IDs when date changes
   React.useEffect(function () {
     setLocalDismissedIds([]);
   }, [selectedDate]);
-  var _useState93 = useState(defaultSeason || "summer"),
-    _useState94 = _slicedToArray(_useState93, 2),
-    season = _useState94[0],
-    setSeason = _useState94[1];
-  var _useState95 = useState(null),
-    _useState96 = _slicedToArray(_useState95, 2),
-    quickLogClient = _useState96[0],
-    setQuickLogClient = _useState96[1];
-  var _useState97 = useState(null),
-    _useState98 = _slicedToArray(_useState97, 2),
-    tasksClient = _useState98[0],
-    setTasksClient = _useState98[1];
+  var _useState101 = useState(defaultSeason || "summer"),
+    _useState102 = _slicedToArray(_useState101, 2),
+    season = _useState102[0],
+    setSeason = _useState102[1];
+  var _useState103 = useState(null),
+    _useState104 = _slicedToArray(_useState103, 2),
+    quickLogClient = _useState104[0],
+    setQuickLogClient = _useState104[1];
+  var _useState105 = useState(null),
+    _useState106 = _slicedToArray(_useState105, 2),
+    tasksClient = _useState106[0],
+    setTasksClient = _useState106[1];
   // carries and snowDays are now shared via Supabase — use props
   var sk = season === "winter" ? "w:" : ""; // keeps Lawn and Snow routes completely separate
   var carriesAll = carriesShared || {};
-  var carries = Object.fromEntries(Object.entries(carriesAll).filter(function (_ref31) {
-    var _ref32 = _slicedToArray(_ref31, 1),
-      k = _ref32[0];
+  var carries = Object.fromEntries(Object.entries(carriesAll).filter(function (_ref32) {
+    var _ref33 = _slicedToArray(_ref32, 1),
+      k = _ref33[0];
     return k.startsWith("w:") === (season === "winter");
-  }).map(function (_ref33) {
-    var _ref34 = _slicedToArray(_ref33, 2),
-      k = _ref34[0],
-      v = _ref34[1];
+  }).map(function (_ref34) {
+    var _ref35 = _slicedToArray(_ref34, 2),
+      k = _ref35[0],
+      v = _ref35[1];
     return [sk ? k.slice(2) : k, v];
   }));
   // Local dismissed IDs for instant UI removal — plain array, no Set spread issues
-  var _useState99 = useState([]),
-    _useState100 = _slicedToArray(_useState99, 2),
-    localDismissedIds = _useState100[0],
-    setLocalDismissedIds = _useState100[1];
+  var _useState107 = useState([]),
+    _useState108 = _slicedToArray(_useState107, 2),
+    localDismissedIds = _useState108[0],
+    setLocalDismissedIds = _useState108[1];
   var setCarries = function setCarries(updater) {
     var view = typeof updater === "function" ? updater(carries) : updater;
-    var other = Object.fromEntries(Object.entries(carriesAll).filter(function (_ref35) {
-      var _ref36 = _slicedToArray(_ref35, 1),
-        k = _ref36[0];
+    var other = Object.fromEntries(Object.entries(carriesAll).filter(function (_ref36) {
+      var _ref37 = _slicedToArray(_ref36, 1),
+        k = _ref37[0];
       return k.startsWith("w:") !== (season === "winter");
     }));
-    var mine = Object.fromEntries(Object.entries(view).map(function (_ref37) {
-      var _ref38 = _slicedToArray(_ref37, 2),
-        k = _ref38[0],
-        v = _ref38[1];
+    var mine = Object.fromEntries(Object.entries(view).map(function (_ref38) {
+      var _ref39 = _slicedToArray(_ref38, 2),
+        k = _ref39[0],
+        v = _ref39[1];
       return [sk + k, v];
     }));
     var next = _objectSpread(_objectSpread({}, other), mine);
@@ -5221,50 +5387,50 @@ function RouteTab(_ref30) {
       }])));
     });
   };
-  var _useState101 = useState(null),
-    _useState102 = _slicedToArray(_useState101, 2),
-    confirmAction = _useState102[0],
-    setConfirmAction = _useState102[1]; // { message, onConfirm }
-  var _useState103 = useState(null),
-    _useState104 = _slicedToArray(_useState103, 2),
-    skipModal = _useState104[0],
-    setSkipModal = _useState104[1]; // client being skipped
-  var _useState105 = useState(false),
-    _useState106 = _slicedToArray(_useState105, 2),
-    confirmRotationRemove = _useState106[0],
-    setConfirmRotationRemove = _useState106[1];
-  var _useState107 = useState(""),
-    _useState108 = _slicedToArray(_useState107, 2),
-    skipReason = _useState108[0],
-    setSkipReason = _useState108[1];
-  var _useState109 = useState(false),
+  var _useState109 = useState(null),
     _useState110 = _slicedToArray(_useState109, 2),
-    clearAllModal = _useState110[0],
-    setClearAllModal = _useState110[1];
-  var _useState111 = useState(false),
+    confirmAction = _useState110[0],
+    setConfirmAction = _useState110[1]; // { message, onConfirm }
+  var _useState111 = useState(null),
     _useState112 = _slicedToArray(_useState111, 2),
-    showAddToRoute = _useState112[0],
-    setShowAddToRoute = _useState112[1]; // pick-from-list modal
+    skipModal = _useState112[0],
+    setSkipModal = _useState112[1]; // client being skipped
+  var _useState113 = useState(false),
+    _useState114 = _slicedToArray(_useState113, 2),
+    confirmRotationRemove = _useState114[0],
+    setConfirmRotationRemove = _useState114[1];
+  var _useState115 = useState(""),
+    _useState116 = _slicedToArray(_useState115, 2),
+    skipReason = _useState116[0],
+    setSkipReason = _useState116[1];
+  var _useState117 = useState(false),
+    _useState118 = _slicedToArray(_useState117, 2),
+    clearAllModal = _useState118[0],
+    setClearAllModal = _useState118[1];
+  var _useState119 = useState(false),
+    _useState120 = _slicedToArray(_useState119, 2),
+    showAddToRoute = _useState120[0],
+    setShowAddToRoute = _useState120[1]; // pick-from-list modal
   // reschedules: { [clientId_to]: "YYYY-MM-DD", [clientId_from]: "YYYY-MM-DD" }
-  var _useState113 = useState(function () {
+  var _useState121 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem(KEYS.reschedules) || "{}");
-      } catch (_unused2) {
+      } catch (_unused3) {
         return {};
       }
     }),
-    _useState114 = _slicedToArray(_useState113, 2),
-    reschedules = _useState114[0],
-    setReschedules = _useState114[1];
+    _useState122 = _slicedToArray(_useState121, 2),
+    reschedules = _useState122[0],
+    setReschedules = _useState122[1];
   var saveReschedules = function saveReschedules(next) {
     try {
       localStorage.setItem(KEYS.reschedules, JSON.stringify(next));
-    } catch (_unused3) {}
+    } catch (_unused4) {}
   };
-  var _useState115 = useState(null),
-    _useState116 = _slicedToArray(_useState115, 2),
-    rescheduleClient = _useState116[0],
-    setRescheduleClient = _useState116[1]; // client being rescheduled
+  var _useState123 = useState(null),
+    _useState124 = _slicedToArray(_useState123, 2),
+    rescheduleClient = _useState124[0],
+    setRescheduleClient = _useState124[1]; // client being rescheduled
   var applyReschedule = function applyReschedule(client, newDate) {
     // Find what their normal scheduled date would be near this week
     var next = _objectSpread(_objectSpread({}, reschedules), {}, _defineProperty(_defineProperty({}, sk + client.id + "_to", newDate), sk + client.id + "_from", selectedDate));
@@ -5280,30 +5446,30 @@ function RouteTab(_ref30) {
     saveReschedules(next);
   };
   // routeOrder: { summer: [clientId,...], winter: [clientId,...] }
-  var _useState117 = useState(function () {
+  var _useState125 = useState(function () {
       try {
         return JSON.parse(localStorage.getItem(KEYS.routeOrder) || "{}");
-      } catch (_unused4) {
+      } catch (_unused5) {
         return {};
       }
     }),
-    _useState118 = _slicedToArray(_useState117, 2),
-    routeOrder = _useState118[0],
-    setRouteOrder = _useState118[1];
+    _useState126 = _slicedToArray(_useState125, 2),
+    routeOrder = _useState126[0],
+    setRouteOrder = _useState126[1];
   var saveRouteOrder = function saveRouteOrder(next) {
     try {
       localStorage.setItem(KEYS.routeOrder, JSON.stringify(next));
-    } catch (_unused5) {}
+    } catch (_unused6) {}
   };
   // Reorder state — simple array of IDs, no drag needed
-  var _useState119 = useState(null),
-    _useState120 = _slicedToArray(_useState119, 2),
-    localOrder = _useState120[0],
-    setLocalOrder = _useState120[1];
-  var _useState121 = useState(false),
-    _useState122 = _slicedToArray(_useState121, 2),
-    orderDirty = _useState122[0],
-    setOrderDirty = _useState122[1];
+  var _useState127 = useState(null),
+    _useState128 = _slicedToArray(_useState127, 2),
+    localOrder = _useState128[0],
+    setLocalOrder = _useState128[1];
+  var _useState129 = useState(false),
+    _useState130 = _slicedToArray(_useState129, 2),
+    orderDirty = _useState130[0],
+    setOrderDirty = _useState130[1];
   var dragState = React.useRef({
     currentIds: []
   }); // kept for compat
@@ -5333,43 +5499,43 @@ function RouteTab(_ref30) {
   };
 
   // quick-note modal: { clientId, existingNote }
-  var _useState123 = useState(null),
-    _useState124 = _slicedToArray(_useState123, 2),
-    quickNoteModal = _useState124[0],
-    setQuickNoteModal = _useState124[1];
+  var _useState131 = useState(null),
+    _useState132 = _slicedToArray(_useState131, 2),
+    quickNoteModal = _useState132[0],
+    setQuickNoteModal = _useState132[1];
   var QUICK_NOTES = ["Gate locked ", "Dog in yard ", "Skipped back yard", "Client home", "No access", "Left note for client", "Extra time needed"];
   // snowDays: shared via Supabase
   var snowDays = snowDaysShared || {};
   var setSnowDays = /*#__PURE__*/function () {
-    var _setSnowDays = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0(updater) {
+    var _setSnowDays = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1(updater) {
       var next;
-      return _regenerator().w(function (_context0) {
-        while (1) switch (_context0.n) {
+      return _regenerator().w(function (_context1) {
+        while (1) switch (_context1.n) {
           case 0:
             setSnowDaysShared(function (prev) {
               next = typeof updater === "function" ? updater(prev) : updater;
               return next;
             });
-            _context0.n = 1;
+            _context1.n = 1;
             return saveShared(KEYS.snowDays, next);
           case 1:
-            return _context0.a(2);
+            return _context1.a(2);
         }
-      }, _callee0);
+      }, _callee1);
     }));
     function setSnowDays(_x10) {
       return _setSnowDays.apply(this, arguments);
     }
     return setSnowDays;
   }();
-  var _useState125 = useState(null),
-    _useState126 = _slicedToArray(_useState125, 2),
-    weather = _useState126[0],
-    setWeather = _useState126[1]; // { snowfall, tempMin, fetched }
-  var _useState127 = useState(false),
-    _useState128 = _slicedToArray(_useState127, 2),
-    weatherLoading = _useState128[0],
-    setWeatherLoading = _useState128[1];
+  var _useState133 = useState(null),
+    _useState134 = _slicedToArray(_useState133, 2),
+    weather = _useState134[0],
+    setWeather = _useState134[1]; // { snowfall, tempMin, fetched }
+  var _useState135 = useState(false),
+    _useState136 = _slicedToArray(_useState135, 2),
+    weatherLoading = _useState136[0],
+    setWeatherLoading = _useState136[1];
 
   // Fetch Toronto weather from Open-Meteo (free, no key)
   React.useEffect(function () {
@@ -5616,17 +5782,17 @@ function RouteTab(_ref30) {
     });
   };
   var quickComplete = /*#__PURE__*/function () {
-    var _quickComplete = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1(client) {
+    var _quickComplete = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(client) {
       var existing, defaultTasks, defaultTimestamps, tasks, now, next;
-      return _regenerator().w(function (_context1) {
-        while (1) switch (_context1.n) {
+      return _regenerator().w(function (_context10) {
+        while (1) switch (_context10.n) {
           case 0:
             existing = getVisit(client.id);
             if (!existing) {
-              _context1.n = 1;
+              _context10.n = 1;
               break;
             }
-            return _context1.a(2);
+            return _context10.a(2);
           case 1:
             // already logged
             defaultTasks = season === "summer" ? defaultSummerTasks() : defaultWinterTasks();
@@ -5647,15 +5813,21 @@ function RouteTab(_ref30) {
               taskTimestamps: {},
               loggedBy: employee,
               loggedAt: now,
+              taskLog: Object.fromEntries(Object.keys(tasks).map(function (k) {
+                return [k, {
+                  by: employee,
+                  at: now
+                }];
+              })),
               recurrence: client.recurrence || "None"
             }]);
             if (season === "summer") setServices.setSummer(next);else setServices.setWinter(next);
-            _context1.n = 2;
+            _context10.n = 2;
             return saveShared(storageKey, next);
           case 2:
-            return _context1.a(2);
+            return _context10.a(2);
         }
-      }, _callee1);
+      }, _callee10);
     }));
     function quickComplete(_x11) {
       return _quickComplete.apply(this, arguments);
@@ -6946,10 +7118,10 @@ function RouteTab(_ref30) {
     },
     employee: employee,
     onSave: (/*#__PURE__*/function () {
-      var _ref41 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10(newVisit) {
+      var _ref42 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11(newVisit) {
         var existing, next;
-        return _regenerator().w(function (_context10) {
-          while (1) switch (_context10.n) {
+        return _regenerator().w(function (_context11) {
+          while (1) switch (_context11.n) {
             case 0:
               existing = services.find(function (s) {
                 return s.clientId === tasksClient.id && s.date === selectedDate;
@@ -6958,17 +7130,17 @@ function RouteTab(_ref30) {
                 return s.clientId === tasksClient.id && s.date === selectedDate ? _objectSpread(_objectSpread({}, s), newVisit) : s;
               }) : [].concat(_toConsumableArray(services), [newVisit]);
               if (season === "summer") setServices.setSummer(next);else setServices.setWinter(next);
-              _context10.n = 1;
+              _context11.n = 1;
               return saveShared(storageKey, next);
             case 1:
               setTasksClient(null);
             case 2:
-              return _context10.a(2);
+              return _context11.a(2);
           }
-        }, _callee10);
+        }, _callee11);
       }));
       return function (_x12) {
-        return _ref41.apply(this, arguments);
+        return _ref42.apply(this, arguments);
       };
     }()),
     onClose: function onClose() {
@@ -6990,10 +7162,10 @@ function RouteTab(_ref30) {
 }
 
 // ── SEARCH BAR ────────────────────────────────────────────────────────────────
-function SearchBar(_ref42) {
-  var value = _ref42.value,
-    _onChange4 = _ref42.onChange,
-    placeholder = _ref42.placeholder;
+function SearchBar(_ref43) {
+  var value = _ref43.value,
+    _onChange4 = _ref43.onChange,
+    placeholder = _ref43.placeholder;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "relative",
@@ -7053,9 +7225,9 @@ function SearchBar(_ref42) {
 }
 
 // ── NOTE TEMPLATES ────────────────────────────────────────────────────────────
-function NoteTemplates(_ref43) {
-  var value = _ref43.value,
-    _onChange5 = _ref43.onChange;
+function NoteTemplates(_ref44) {
+  var value = _ref44.value,
+    _onChange5 = _ref44.onChange;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: "14px"
@@ -7115,20 +7287,20 @@ function NoteTemplates(_ref43) {
 }
 
 // ── MONTHLY SUMMARY ───────────────────────────────────────────────────────────
-function MonthlySummary(_ref44) {
-  var clients = _ref44.clients,
-    summerServices = _ref44.summerServices,
-    winterServices = _ref44.winterServices,
-    onClose = _ref44.onClose;
+function MonthlySummary(_ref45) {
+  var clients = _ref45.clients,
+    summerServices = _ref45.summerServices,
+    winterServices = _ref45.winterServices,
+    onClose = _ref45.onClose;
   var now = new Date();
-  var _useState129 = useState(now.getFullYear()),
-    _useState130 = _slicedToArray(_useState129, 2),
-    year = _useState130[0],
-    setYear = _useState130[1];
-  var _useState131 = useState(now.getMonth()),
-    _useState132 = _slicedToArray(_useState131, 2),
-    month = _useState132[0],
-    setMonth = _useState132[1]; // 0-indexed
+  var _useState137 = useState(now.getFullYear()),
+    _useState138 = _slicedToArray(_useState137, 2),
+    year = _useState138[0],
+    setYear = _useState138[1];
+  var _useState139 = useState(now.getMonth()),
+    _useState140 = _slicedToArray(_useState139, 2),
+    month = _useState140[0],
+    setMonth = _useState140[1]; // 0-indexed
 
   var monthStr = "".concat(year, "-").concat(String(month + 1).padStart(2, "0"));
   var monthName = new Date(year, month, 1).toLocaleString("en-US", {
@@ -7438,17 +7610,17 @@ function MonthlySummary(_ref44) {
 }
 
 // ── BULK SEASON ROLLOVER ──────────────────────────────────────────────────────
-function ArchivesModal(_ref45) {
-  var onClose = _ref45.onClose;
-  var _useState133 = useState([]),
-    _useState134 = _slicedToArray(_useState133, 2),
-    archives = _useState134[0],
-    setArchives = _useState134[1];
+function ArchivesModal(_ref46) {
+  var onClose = _ref46.onClose;
+  var _useState141 = useState([]),
+    _useState142 = _slicedToArray(_useState141, 2),
+    archives = _useState142[0],
+    setArchives = _useState142[1];
   useEffect(function () {
     try {
       var stored = JSON.parse(localStorage.getItem(KEYS.archives) || "[]");
       setArchives(stored);
-    } catch (_unused6) {
+    } catch (_unused7) {
       setArchives([]);
     }
   }, []);
@@ -7460,7 +7632,7 @@ function ArchivesModal(_ref45) {
     setArchives(next);
     try {
       localStorage.setItem(KEYS.archives, JSON.stringify(next));
-    } catch (_unused7) {}
+    } catch (_unused8) {}
   };
   return /*#__PURE__*/React.createElement(Modal, {
     title: "Season Archives",
@@ -7602,35 +7774,35 @@ function ArchivesModal(_ref45) {
     }, totalVisits - totalComplete, " partial")));
   })));
 }
-function SeasonRollover(_ref46) {
-  var clients = _ref46.clients,
-    summerServices = _ref46.summerServices,
-    winterServices = _ref46.winterServices,
-    setSummerServices = _ref46.setSummerServices,
-    setWinterServices = _ref46.setWinterServices,
-    onClose = _ref46.onClose;
-  var _useState135 = useState("summer"),
-    _useState136 = _slicedToArray(_useState135, 2),
-    season = _useState136[0],
-    setSeason = _useState136[1];
-  var _useState137 = useState(false),
-    _useState138 = _slicedToArray(_useState137, 2),
-    confirmed = _useState138[0],
-    setConfirmed = _useState138[1];
-  var _useState139 = useState(false),
-    _useState140 = _slicedToArray(_useState139, 2),
-    done = _useState140[0],
-    setDone = _useState140[1];
-  var _useState141 = useState(null),
-    _useState142 = _slicedToArray(_useState141, 2),
-    archiveId = _useState142[0],
-    setArchiveId = _useState142[1];
+function SeasonRollover(_ref47) {
+  var clients = _ref47.clients,
+    summerServices = _ref47.summerServices,
+    winterServices = _ref47.winterServices,
+    setSummerServices = _ref47.setSummerServices,
+    setWinterServices = _ref47.setWinterServices,
+    onClose = _ref47.onClose;
+  var _useState143 = useState("summer"),
+    _useState144 = _slicedToArray(_useState143, 2),
+    season = _useState144[0],
+    setSeason = _useState144[1];
+  var _useState145 = useState(false),
+    _useState146 = _slicedToArray(_useState145, 2),
+    confirmed = _useState146[0],
+    setConfirmed = _useState146[1];
+  var _useState147 = useState(false),
+    _useState148 = _slicedToArray(_useState147, 2),
+    done = _useState148[0],
+    setDone = _useState148[1];
+  var _useState149 = useState(null),
+    _useState150 = _slicedToArray(_useState149, 2),
+    archiveId = _useState150[0],
+    setArchiveId = _useState150[1];
   var count = season === "summer" ? summerServices.length : winterServices.length;
   var rollover = /*#__PURE__*/function () {
-    var _rollover = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11() {
+    var _rollover = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
       var visits, year, archive, existing;
-      return _regenerator().w(function (_context11) {
-        while (1) switch (_context11.n) {
+      return _regenerator().w(function (_context12) {
+        while (1) switch (_context12.n) {
           case 0:
             visits = season === "summer" ? summerServices : winterServices;
             year = new Date().getFullYear();
@@ -7657,35 +7829,35 @@ function SeasonRollover(_ref46) {
             existing = [];
             try {
               existing = JSON.parse(localStorage.getItem(KEYS.archives) || "[]");
-            } catch (_unused8) {}
+            } catch (_unused9) {}
             existing.unshift(archive);
             try {
               localStorage.setItem(KEYS.archives, JSON.stringify(existing));
-            } catch (_unused9) {}
+            } catch (_unused0) {}
             setArchiveId(archive.id);
             // Open the season report
             generateSeasonArchiveReport(archive, LOGO_DATA_URL);
             // Clear the active visits
             if (!(season === "summer")) {
-              _context11.n = 2;
+              _context12.n = 2;
               break;
             }
             setSummerServices([]);
-            _context11.n = 1;
+            _context12.n = 1;
             return saveShared(KEYS.summer, []);
           case 1:
-            _context11.n = 3;
+            _context12.n = 3;
             break;
           case 2:
             setWinterServices([]);
-            _context11.n = 3;
+            _context12.n = 3;
             return saveShared(KEYS.winter, []);
           case 3:
             setDone(true);
           case 4:
-            return _context11.a(2);
+            return _context12.a(2);
         }
-      }, _callee11);
+      }, _callee12);
     }));
     function rollover() {
       return _rollover.apply(this, arguments);
@@ -7823,46 +7995,46 @@ function SeasonRollover(_ref46) {
 }
 
 // ── CLIENTS TAB ───────────────────────────────────────────────────────────────
-function ClientsTab(_ref47) {
+function ClientsTab(_ref48) {
   var _form$services$summer, _form$services, _form$services$winter, _form$services2;
-  var clients = _ref47.clients,
-    setClients = _ref47.setClients,
-    summerServices = _ref47.summerServices,
-    winterServices = _ref47.winterServices,
-    setSummerServices = _ref47.setSummerServices,
-    setWinterServices = _ref47.setWinterServices,
-    employee = _ref47.employee,
-    employeeRole = _ref47.employeeRole,
-    isOwner = _ref47.isOwner,
-    showAddProp = _ref47.showAdd,
-    setShowAddProp = _ref47.setShowAdd,
-    displayMode = _ref47.displayMode,
-    setDisplayMode = _ref47.setDisplayMode,
-    snowDivision = _ref47.snowDivision,
-    master = _ref47.master;
+  var clients = _ref48.clients,
+    setClients = _ref48.setClients,
+    summerServices = _ref48.summerServices,
+    winterServices = _ref48.winterServices,
+    setSummerServices = _ref48.setSummerServices,
+    setWinterServices = _ref48.setWinterServices,
+    employee = _ref48.employee,
+    employeeRole = _ref48.employeeRole,
+    isOwner = _ref48.isOwner,
+    showAddProp = _ref48.showAdd,
+    setShowAddProp = _ref48.setShowAdd,
+    displayMode = _ref48.displayMode,
+    setDisplayMode = _ref48.setDisplayMode,
+    snowDivision = _ref48.snowDivision,
+    master = _ref48.master;
   var isMaster = !!master;
-  var _useState143 = useState("all"),
-    _useState144 = _slicedToArray(_useState143, 2),
-    seasonFilter = _useState144[0],
-    setSeasonFilter = _useState144[1]; // master list filter: all | summer | winter | both
-  var _useState145 = useState(false),
-    _useState146 = _slicedToArray(_useState145, 2),
-    showAddLocal = _useState146[0],
-    setShowAddLocal = _useState146[1];
+  var _useState151 = useState("all"),
+    _useState152 = _slicedToArray(_useState151, 2),
+    seasonFilter = _useState152[0],
+    setSeasonFilter = _useState152[1]; // master list filter: all | summer | winter | both
+  var _useState153 = useState(false),
+    _useState154 = _slicedToArray(_useState153, 2),
+    showAddLocal = _useState154[0],
+    setShowAddLocal = _useState154[1];
   var showAdd = showAddProp !== undefined ? showAddProp : showAddLocal;
   var setShowAdd = setShowAddProp !== undefined ? setShowAddProp : setShowAddLocal;
-  var _useState147 = useState(null),
-    _useState148 = _slicedToArray(_useState147, 2),
-    editClient = _useState148[0],
-    setEditClient = _useState148[1];
-  var _useState149 = useState(null),
-    _useState150 = _slicedToArray(_useState149, 2),
-    historyClient = _useState150[0],
-    setHistoryClient = _useState150[1];
-  var _useState151 = useState(false),
-    _useState152 = _slicedToArray(_useState151, 2),
-    showArchives = _useState152[0],
-    setShowArchives = _useState152[1];
+  var _useState155 = useState(null),
+    _useState156 = _slicedToArray(_useState155, 2),
+    editClient = _useState156[0],
+    setEditClient = _useState156[1];
+  var _useState157 = useState(null),
+    _useState158 = _slicedToArray(_useState157, 2),
+    historyClient = _useState158[0],
+    setHistoryClient = _useState158[1];
+  var _useState159 = useState(false),
+    _useState160 = _slicedToArray(_useState159, 2),
+    showArchives = _useState160[0],
+    setShowArchives = _useState160[1];
   var _React$useState3 = React.useState([]),
     _React$useState4 = _slicedToArray(_React$useState3, 2),
     allEmployees = _React$useState4[0],
@@ -7872,18 +8044,18 @@ function ClientsTab(_ref47) {
       return setAllEmployees(d || []);
     });
   }, []);
-  var _useState153 = useState(null),
-    _useState154 = _slicedToArray(_useState153, 2),
-    confirmDelete = _useState154[0],
-    setConfirmDelete = _useState154[1];
-  var _useState155 = useState(null),
-    _useState156 = _slicedToArray(_useState155, 2),
-    confirmVisitDelete = _useState156[0],
-    setConfirmVisitDelete = _useState156[1]; // { visit, isSummer }
-  var _useState157 = useState(null),
-    _useState158 = _slicedToArray(_useState157, 2),
-    confirmArchiveDelete = _useState158[0],
-    setConfirmArchiveDelete = _useState158[1]; // id
+  var _useState161 = useState(null),
+    _useState162 = _slicedToArray(_useState161, 2),
+    confirmDelete = _useState162[0],
+    setConfirmDelete = _useState162[1];
+  var _useState163 = useState(null),
+    _useState164 = _slicedToArray(_useState163, 2),
+    confirmVisitDelete = _useState164[0],
+    setConfirmVisitDelete = _useState164[1]; // { visit, isSummer }
+  var _useState165 = useState(null),
+    _useState166 = _slicedToArray(_useState165, 2),
+    confirmArchiveDelete = _useState166[0],
+    setConfirmArchiveDelete = _useState166[1]; // id
   var blankForm = function blankForm() {
     return {
       name: "",
@@ -7904,19 +8076,19 @@ function ClientsTab(_ref47) {
       assignedEmployees: []
     };
   };
-  var _useState159 = useState(blankForm()),
-    _useState160 = _slicedToArray(_useState159, 2),
-    form = _useState160[0],
-    setForm = _useState160[1];
-  var _useState161 = useState(""),
-    _useState162 = _slicedToArray(_useState161, 2),
-    search = _useState162[0],
-    setSearch = _useState162[1];
+  var _useState167 = useState(blankForm()),
+    _useState168 = _slicedToArray(_useState167, 2),
+    form = _useState168[0],
+    setForm = _useState168[1];
+  var _useState169 = useState(""),
+    _useState170 = _slicedToArray(_useState169, 2),
+    search = _useState170[0],
+    setSearch = _useState170[1];
   var changeDisplayMode = function changeDisplayMode(mode) {
     setDisplayMode(mode);
     try {
       localStorage.setItem(KEYS.displayMode, mode);
-    } catch (_unused0) {}
+    } catch (_unused1) {}
   };
 
   // Sorted, filtered client list used throughout this tab
@@ -7948,41 +8120,7 @@ function ClientsTab(_ref47) {
   var showSummerFields = isMaster ? (_form$services$summer = (_form$services = form.services) === null || _form$services === void 0 ? void 0 : _form$services.summer) !== null && _form$services$summer !== void 0 ? _form$services$summer : true : !snowDivision;
   var showWinterFields = isMaster ? (_form$services$winter = (_form$services2 = form.services) === null || _form$services2 === void 0 ? void 0 : _form$services2.winter) !== null && _form$services$winter !== void 0 ? _form$services$winter : false : !!snowDivision;
   var addClient = /*#__PURE__*/function () {
-    var _addClient = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
-      var next;
-      return _regenerator().w(function (_context12) {
-        while (1) switch (_context12.n) {
-          case 0:
-            if (!(!form.name || !form.address)) {
-              _context12.n = 1;
-              break;
-            }
-            return _context12.a(2);
-          case 1:
-            next = [].concat(_toConsumableArray(clients), [_objectSpread(_objectSpread({
-              id: Date.now()
-            }, form), {}, {
-              addedBy: employee,
-              addedAt: new Date().toISOString()
-            })]);
-            setClients(next);
-            _context12.n = 2;
-            return saveShared(KEYS.clients, next);
-          case 2:
-            setForm(blankForm());
-            setShowAdd(false);
-          case 3:
-            return _context12.a(2);
-        }
-      }, _callee12);
-    }));
-    function addClient() {
-      return _addClient.apply(this, arguments);
-    }
-    return addClient;
-  }();
-  var saveEdit = /*#__PURE__*/function () {
-    var _saveEdit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13() {
+    var _addClient = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13() {
       var next;
       return _regenerator().w(function (_context13) {
         while (1) switch (_context13.n) {
@@ -7993,18 +8131,52 @@ function ClientsTab(_ref47) {
             }
             return _context13.a(2);
           case 1:
-            next = clients.map(function (c) {
-              return c.id === editClient.id ? _objectSpread(_objectSpread({}, c), form) : c;
-            });
+            next = [].concat(_toConsumableArray(clients), [_objectSpread(_objectSpread({
+              id: Date.now()
+            }, form), {}, {
+              addedBy: employee,
+              addedAt: new Date().toISOString()
+            })]);
             setClients(next);
             _context13.n = 2;
             return saveShared(KEYS.clients, next);
           case 2:
-            setEditClient(null);
+            setForm(blankForm());
+            setShowAdd(false);
           case 3:
             return _context13.a(2);
         }
       }, _callee13);
+    }));
+    function addClient() {
+      return _addClient.apply(this, arguments);
+    }
+    return addClient;
+  }();
+  var saveEdit = /*#__PURE__*/function () {
+    var _saveEdit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14() {
+      var next;
+      return _regenerator().w(function (_context14) {
+        while (1) switch (_context14.n) {
+          case 0:
+            if (!(!form.name || !form.address)) {
+              _context14.n = 1;
+              break;
+            }
+            return _context14.a(2);
+          case 1:
+            next = clients.map(function (c) {
+              return c.id === editClient.id ? _objectSpread(_objectSpread({}, c), form) : c;
+            });
+            setClients(next);
+            _context14.n = 2;
+            return saveShared(KEYS.clients, next);
+          case 2:
+            setEditClient(null);
+          case 3:
+            return _context14.a(2);
+        }
+      }, _callee14);
     }));
     function saveEdit() {
       return _saveEdit.apply(this, arguments);
@@ -8033,59 +8205,59 @@ function ClientsTab(_ref47) {
     setEditClient(c);
   };
   var removeClient = /*#__PURE__*/function () {
-    var _removeClient = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14(id) {
+    var _removeClient = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee15(id) {
       var next;
-      return _regenerator().w(function (_context14) {
-        while (1) switch (_context14.n) {
+      return _regenerator().w(function (_context15) {
+        while (1) switch (_context15.n) {
           case 0:
             next = clients.filter(function (c) {
               return c.id !== id;
             });
             setClients(next);
-            _context14.n = 1;
+            _context15.n = 1;
             return saveShared(KEYS.clients, next);
           case 1:
             setConfirmDelete(null);
           case 2:
-            return _context14.a(2);
+            return _context15.a(2);
         }
-      }, _callee14);
+      }, _callee15);
     }));
     function removeClient(_x13) {
       return _removeClient.apply(this, arguments);
     }
     return removeClient;
   }();
-  var _useState163 = useState(null),
-    _useState164 = _slicedToArray(_useState163, 2),
-    deletedVisit = _useState164[0],
-    setDeletedVisit = _useState164[1]; // { visit, isSummer, timer }
+  var _useState171 = useState(null),
+    _useState172 = _slicedToArray(_useState171, 2),
+    deletedVisit = _useState172[0],
+    setDeletedVisit = _useState172[1]; // { visit, isSummer, timer }
 
   var deleteVisit = /*#__PURE__*/function () {
-    var _deleteVisit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee15(visit, isSummer) {
+    var _deleteVisit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16(visit, isSummer) {
       var next, _next2, timer;
-      return _regenerator().w(function (_context15) {
-        while (1) switch (_context15.n) {
+      return _regenerator().w(function (_context16) {
+        while (1) switch (_context16.n) {
           case 0:
             if (!isSummer) {
-              _context15.n = 2;
+              _context16.n = 2;
               break;
             }
             next = summerServices.filter(function (s) {
               return s.id !== visit.id;
             });
             setSummerServices(next);
-            _context15.n = 1;
+            _context16.n = 1;
             return saveShared(KEYS.summer, next);
           case 1:
-            _context15.n = 3;
+            _context16.n = 3;
             break;
           case 2:
             _next2 = winterServices.filter(function (s) {
               return s.id !== visit.id;
             });
             setWinterServices(_next2);
-            _context15.n = 3;
+            _context16.n = 3;
             return saveShared(KEYS.winter, _next2);
           case 3:
             // Hold in undo buffer for 8 seconds
@@ -8099,9 +8271,9 @@ function ClientsTab(_ref47) {
               timer: timer
             });
           case 4:
-            return _context15.a(2);
+            return _context16.a(2);
         }
-      }, _callee15);
+      }, _callee16);
     }));
     function deleteVisit(_x14, _x15) {
       return _deleteVisit.apply(this, arguments);
@@ -8109,45 +8281,45 @@ function ClientsTab(_ref47) {
     return deleteVisit;
   }();
   var restoreVisit = /*#__PURE__*/function () {
-    var _restoreVisit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16() {
+    var _restoreVisit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee17() {
       var visit, isSummer, next, _next3;
-      return _regenerator().w(function (_context16) {
-        while (1) switch (_context16.n) {
+      return _regenerator().w(function (_context17) {
+        while (1) switch (_context17.n) {
           case 0:
             if (deletedVisit) {
-              _context16.n = 1;
+              _context17.n = 1;
               break;
             }
-            return _context16.a(2);
+            return _context17.a(2);
           case 1:
             clearTimeout(deletedVisit.timer);
             visit = deletedVisit.visit, isSummer = deletedVisit.isSummer;
             if (!isSummer) {
-              _context16.n = 3;
+              _context17.n = 3;
               break;
             }
             next = [].concat(_toConsumableArray(summerServices), [visit]).sort(function (a, b) {
               return b.date.localeCompare(a.date);
             });
             setSummerServices(next);
-            _context16.n = 2;
+            _context17.n = 2;
             return saveShared(KEYS.summer, next);
           case 2:
-            _context16.n = 4;
+            _context17.n = 4;
             break;
           case 3:
             _next3 = [].concat(_toConsumableArray(winterServices), [visit]).sort(function (a, b) {
               return b.date.localeCompare(a.date);
             });
             setWinterServices(_next3);
-            _context16.n = 4;
+            _context17.n = 4;
             return saveShared(KEYS.winter, _next3);
           case 4:
             setDeletedVisit(null);
           case 5:
-            return _context16.a(2);
+            return _context17.a(2);
         }
-      }, _callee16);
+      }, _callee17);
     }));
     function restoreVisit() {
       return _restoreVisit.apply(this, arguments);
@@ -8235,10 +8407,10 @@ function ClientsTab(_ref47) {
       color: "var(--faint)",
       fontWeight: 600
     }
-  }, "SHOW:"), [["contact", "Contact"], ["business", "Business"]].map(function (_ref48) {
-    var _ref49 = _slicedToArray(_ref48, 2),
-      mode = _ref49[0],
-      label = _ref49[1];
+  }, "SHOW:"), [["contact", "Contact"], ["business", "Business"]].map(function (_ref49) {
+    var _ref50 = _slicedToArray(_ref49, 2),
+      mode = _ref50[0],
+      label = _ref50[1];
     return /*#__PURE__*/React.createElement("button", {
       key: mode,
       onClick: function onClick() {
@@ -8269,11 +8441,11 @@ function ClientsTab(_ref47) {
     }
   }, [["all", "All", roleClients.length], ["summer", "Summer", roleClients.filter(isSumC).length], ["winter", "Winter", roleClients.filter(isWinC).length], ["both", "Both", roleClients.filter(function (c) {
     return isSumC(c) && isWinC(c);
-  }).length]].map(function (_ref50) {
-    var _ref51 = _slicedToArray(_ref50, 3),
-      key = _ref51[0],
-      label = _ref51[1],
-      n = _ref51[2];
+  }).length]].map(function (_ref51) {
+    var _ref52 = _slicedToArray(_ref51, 3),
+      key = _ref52[0],
+      label = _ref52[1],
+      n = _ref52[2];
     return /*#__PURE__*/React.createElement("button", {
       key: key,
       onClick: function onClick() {
@@ -8765,13 +8937,13 @@ function ClientsTab(_ref47) {
         display: "flex",
         gap: "8px"
       }
-    }, opts.map(function (_ref52) {
-      var _ref53 = _slicedToArray(_ref52, 5),
-        key = _ref53[0],
-        label = _ref53[1],
-        su = _ref53[2],
-        wi = _ref53[3],
-        col = _ref53[4];
+    }, opts.map(function (_ref53) {
+      var _ref54 = _slicedToArray(_ref53, 5),
+        key = _ref54[0],
+        label = _ref54[1],
+        su = _ref54[2],
+        wi = _ref54[3],
+        col = _ref54[4];
       var active = sumOn === su && winOn === wi;
       return /*#__PURE__*/React.createElement("button", {
         key: key,
@@ -9425,10 +9597,10 @@ function generateSeasonArchiveReport(archive, logoDataUrl) {
   (clientSnapshot || []).forEach(function (c) {
     clientLookup[c.id] = c;
   });
-  var clientSections = Object.entries(byClient).map(function (_ref54) {
-    var _ref55 = _slicedToArray(_ref54, 2),
-      cid = _ref55[0],
-      cvs = _ref55[1];
+  var clientSections = Object.entries(byClient).map(function (_ref55) {
+    var _ref56 = _slicedToArray(_ref55, 2),
+      cid = _ref56[0],
+      cvs = _ref56[1];
     var c = clientLookup[cid] || {};
     var name = c.name || c.businessName || "Unknown Client";
     var addr = c.address || "";
@@ -9534,10 +9706,10 @@ function generateDayReport(date, clients, summerServices, winterServices, logoDa
 }
 
 // ── DAY REPORT BUTTON ────────────────────────────────────────────────────────
-function DayReportButton(_ref56) {
-  var clients = _ref56.clients,
-    summerServices = _ref56.summerServices,
-    winterServices = _ref56.winterServices;
+function DayReportButton(_ref57) {
+  var clients = _ref57.clients,
+    summerServices = _ref57.summerServices,
+    winterServices = _ref57.winterServices;
   var today = todayStr();
   var _React$useState5 = React.useState(false),
     _React$useState6 = _slicedToArray(_React$useState5, 2),
@@ -9645,12 +9817,12 @@ function generateReport(service, clientName, clientAddr, season, flatConfig, log
 }
 
 // ── SERVICE TAB ───────────────────────────────────────────────────────────────
-function ServiceTab(_ref57) {
-  var season = _ref57.season,
-    clients = _ref57.clients,
-    services = _ref57.services,
-    setServices = _ref57.setServices,
-    employee = _ref57.employee;
+function ServiceTab(_ref58) {
+  var season = _ref58.season,
+    clients = _ref58.clients,
+    services = _ref58.services,
+    setServices = _ref58.setServices,
+    employee = _ref58.employee;
   var isSummer = season === "summer";
   var accent = isSummer ? {
     from: "var(--greenD)",
@@ -9673,7 +9845,7 @@ function ServiceTab(_ref57) {
     var ma = function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused1) {
+      } catch (_unused10) {
         return "contact";
       }
     }();
@@ -9681,22 +9853,22 @@ function ServiceTab(_ref57) {
       sensitivity: "base"
     });
   });
-  var _useState165 = useState(false),
-    _useState166 = _slicedToArray(_useState165, 2),
-    showModal = _useState166[0],
-    setShowModal = _useState166[1];
-  var _useState167 = useState(null),
-    _useState168 = _slicedToArray(_useState167, 2),
-    confirmServiceDelete = _useState168[0],
-    setConfirmServiceDelete = _useState168[1];
-  var _useState169 = useState(null),
-    _useState170 = _slicedToArray(_useState169, 2),
-    editingId = _useState170[0],
-    setEditingId = _useState170[1];
-  var _useState171 = useState("all"),
-    _useState172 = _slicedToArray(_useState171, 2),
-    filter = _useState172[0],
-    setFilter = _useState172[1];
+  var _useState173 = useState(false),
+    _useState174 = _slicedToArray(_useState173, 2),
+    showModal = _useState174[0],
+    setShowModal = _useState174[1];
+  var _useState175 = useState(null),
+    _useState176 = _slicedToArray(_useState175, 2),
+    confirmServiceDelete = _useState176[0],
+    setConfirmServiceDelete = _useState176[1];
+  var _useState177 = useState(null),
+    _useState178 = _slicedToArray(_useState177, 2),
+    editingId = _useState178[0],
+    setEditingId = _useState178[1];
+  var _useState179 = useState("all"),
+    _useState180 = _slicedToArray(_useState179, 2),
+    filter = _useState180[0],
+    setFilter = _useState180[1];
   var emptyForm = function emptyForm() {
     var _enrolledClients$, _enrolledClients$2;
     return {
@@ -9711,10 +9883,10 @@ function ServiceTab(_ref57) {
       recurrence: ((_enrolledClients$2 = enrolledClients[0]) === null || _enrolledClients$2 === void 0 ? void 0 : _enrolledClients$2.recurrence) || "None"
     };
   };
-  var _useState173 = useState(emptyForm()),
-    _useState174 = _slicedToArray(_useState173, 2),
-    form = _useState174[0],
-    setForm = _useState174[1];
+  var _useState181 = useState(emptyForm()),
+    _useState182 = _slicedToArray(_useState181, 2),
+    form = _useState182[0],
+    setForm = _useState182[1];
   var openAdd = function openAdd() {
     setForm(emptyForm());
     setEditingId(null);
@@ -9735,16 +9907,16 @@ function ServiceTab(_ref57) {
     setShowModal(true);
   };
   var saveService = /*#__PURE__*/function () {
-    var _saveService = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee17() {
+    var _saveService = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee18() {
       var now, next;
-      return _regenerator().w(function (_context17) {
-        while (1) switch (_context17.n) {
+      return _regenerator().w(function (_context18) {
+        while (1) switch (_context18.n) {
           case 0:
             if (!(!form.clientId || !form.date)) {
-              _context17.n = 1;
+              _context18.n = 1;
               break;
             }
-            return _context17.a(2);
+            return _context18.a(2);
           case 1:
             now = new Date().toISOString();
             if (editingId) next = services.map(function (s) {
@@ -9761,15 +9933,15 @@ function ServiceTab(_ref57) {
               loggedAt: now
             })]);
             setServices(next);
-            _context17.n = 2;
+            _context18.n = 2;
             return saveShared(storageKey, next);
           case 2:
             setShowModal(false);
             setEditingId(null);
           case 3:
-            return _context17.a(2);
+            return _context18.a(2);
         }
-      }, _callee17);
+      }, _callee18);
     }));
     function saveService() {
       return _saveService.apply(this, arguments);
@@ -9777,21 +9949,21 @@ function ServiceTab(_ref57) {
     return saveService;
   }();
   var deleteService = /*#__PURE__*/function () {
-    var _deleteService = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee18(id) {
+    var _deleteService = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee19(id) {
       var next;
-      return _regenerator().w(function (_context18) {
-        while (1) switch (_context18.n) {
+      return _regenerator().w(function (_context19) {
+        while (1) switch (_context19.n) {
           case 0:
             next = services.filter(function (x) {
               return x.id !== id;
             });
             setServices(next);
-            _context18.n = 1;
+            _context19.n = 1;
             return saveShared(storageKey, next);
           case 1:
-            return _context18.a(2);
+            return _context19.a(2);
         }
-      }, _callee18);
+      }, _callee19);
     }));
     function deleteService(_x16) {
       return _deleteService.apply(this, arguments);
@@ -9805,7 +9977,7 @@ function ServiceTab(_ref57) {
     var ma = function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused10) {
+      } catch (_unused11) {
         return "contact";
       }
     }();
@@ -9886,10 +10058,10 @@ function ServiceTab(_ref57) {
       marginBottom: "20px",
       flexWrap: "wrap"
     }
-  }, [["all", "All"], ["complete", "Complete"], ["partial", "Partial"], ["pending", "Pending"]].map(function (_ref58) {
-    var _ref59 = _slicedToArray(_ref58, 2),
-      val = _ref59[0],
-      lbl = _ref59[1];
+  }, [["all", "All"], ["complete", "Complete"], ["partial", "Partial"], ["pending", "Pending"]].map(function (_ref59) {
+    var _ref60 = _slicedToArray(_ref59, 2),
+      val = _ref60[0],
+      lbl = _ref60[1];
     return /*#__PURE__*/React.createElement("button", {
       key: val,
       onClick: function onClick() {
@@ -10162,7 +10334,7 @@ function ServiceTab(_ref57) {
     var ma = function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused11) {
+      } catch (_unused12) {
         return "contact";
       }
     }();
@@ -10301,33 +10473,33 @@ function ServiceTab(_ref57) {
 }
 
 // ── OWNER PIN SCREEN ──────────────────────────────────────────────────────────
-function OwnerPinScreen(_ref60) {
-  var onSuccess = _ref60.onSuccess,
-    onCancel = _ref60.onCancel;
-  var _useState175 = useState(""),
-    _useState176 = _slicedToArray(_useState175, 2),
-    pin = _useState176[0],
-    setPin = _useState176[1];
-  var _useState177 = useState(""),
-    _useState178 = _slicedToArray(_useState177, 2),
-    confirm = _useState178[0],
-    setConfirm = _useState178[1];
-  var _useState179 = useState(null),
-    _useState180 = _slicedToArray(_useState179, 2),
-    existing = _useState180[0],
-    setExisting = _useState180[1];
-  var _useState181 = useState(""),
-    _useState182 = _slicedToArray(_useState181, 2),
-    error = _useState182[0],
-    setError = _useState182[1];
-  var _useState183 = useState(true),
+function OwnerPinScreen(_ref61) {
+  var onSuccess = _ref61.onSuccess,
+    onCancel = _ref61.onCancel;
+  var _useState183 = useState(""),
     _useState184 = _slicedToArray(_useState183, 2),
-    loading = _useState184[0],
-    setLoading = _useState184[1];
-  var _useState185 = useState("enter"),
+    pin = _useState184[0],
+    setPin = _useState184[1];
+  var _useState185 = useState(""),
     _useState186 = _slicedToArray(_useState185, 2),
-    mode = _useState186[0],
-    setMode = _useState186[1]; // enter | setup
+    confirm = _useState186[0],
+    setConfirm = _useState186[1];
+  var _useState187 = useState(null),
+    _useState188 = _slicedToArray(_useState187, 2),
+    existing = _useState188[0],
+    setExisting = _useState188[1];
+  var _useState189 = useState(""),
+    _useState190 = _slicedToArray(_useState189, 2),
+    error = _useState190[0],
+    setError = _useState190[1];
+  var _useState191 = useState(true),
+    _useState192 = _slicedToArray(_useState191, 2),
+    loading = _useState192[0],
+    setLoading = _useState192[1];
+  var _useState193 = useState("enter"),
+    _useState194 = _slicedToArray(_useState193, 2),
+    mode = _useState194[0],
+    setMode = _useState194[1]; // enter | setup
 
   useEffect(function () {
     loadShared(KEYS.ownerpin).then(function (p) {
@@ -10337,9 +10509,9 @@ function OwnerPinScreen(_ref60) {
     });
   }, []);
   var handleEnter = /*#__PURE__*/function () {
-    var _handleEnter = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee19() {
-      return _regenerator().w(function (_context19) {
-        while (1) switch (_context19.n) {
+    var _handleEnter = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee20() {
+      return _regenerator().w(function (_context20) {
+        while (1) switch (_context20.n) {
           case 0:
             if (pin === existing) {
               onSuccess();
@@ -10348,9 +10520,9 @@ function OwnerPinScreen(_ref60) {
               setPin("");
             }
           case 1:
-            return _context19.a(2);
+            return _context20.a(2);
         }
-      }, _callee19);
+      }, _callee20);
     }));
     function handleEnter() {
       return _handleEnter.apply(this, arguments);
@@ -10358,32 +10530,32 @@ function OwnerPinScreen(_ref60) {
     return handleEnter;
   }();
   var handleSetup = /*#__PURE__*/function () {
-    var _handleSetup = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee20() {
-      return _regenerator().w(function (_context20) {
-        while (1) switch (_context20.n) {
+    var _handleSetup = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee21() {
+      return _regenerator().w(function (_context21) {
+        while (1) switch (_context21.n) {
           case 0:
             if (!(pin.length < 4)) {
-              _context20.n = 1;
+              _context21.n = 1;
               break;
             }
             setError("PIN must be at least 4 digits.");
-            return _context20.a(2);
+            return _context21.a(2);
           case 1:
             if (!(pin !== confirm)) {
-              _context20.n = 2;
+              _context21.n = 2;
               break;
             }
             setError("PINs do not match.");
-            return _context20.a(2);
+            return _context21.a(2);
           case 2:
-            _context20.n = 3;
+            _context21.n = 3;
             return saveShared(KEYS.ownerpin, pin);
           case 3:
             onSuccess();
           case 4:
-            return _context20.a(2);
+            return _context21.a(2);
         }
-      }, _callee20);
+      }, _callee21);
     }));
     function handleSetup() {
       return _handleSetup.apply(this, arguments);
@@ -10552,23 +10724,23 @@ function OwnerPinScreen(_ref60) {
 }
 
 // ── PAVER JOB CARD ────────────────────────────────────────────────────────────
-function PaverJobCard(_ref61) {
-  var job = _ref61.job,
-    onEdit = _ref61.onEdit,
-    onDelete = _ref61.onDelete,
-    accentColor = _ref61.accentColor,
-    _ref61$cfg = _ref61.cfg,
-    cfg = _ref61$cfg === void 0 ? HSC_SECTIONS.pavers : _ref61$cfg;
+function PaverJobCard(_ref62) {
+  var job = _ref62.job,
+    onEdit = _ref62.onEdit,
+    onDelete = _ref62.onDelete,
+    accentColor = _ref62.accentColor,
+    _ref62$cfg = _ref62.cfg,
+    cfg = _ref62$cfg === void 0 ? HSC_SECTIONS.pavers : _ref62$cfg;
   var L = hscLabels(cfg, job.jobType);
   var PHASES = hscPhases(cfg, job);
-  var _useState187 = useState(false),
-    _useState188 = _slicedToArray(_useState187, 2),
-    expanded = _useState188[0],
-    setExpanded = _useState188[1];
-  var _useState189 = useState(null),
-    _useState190 = _slicedToArray(_useState189, 2),
-    lightbox = _useState190[0],
-    setLightbox = _useState190[1];
+  var _useState195 = useState(false),
+    _useState196 = _slicedToArray(_useState195, 2),
+    expanded = _useState196[0],
+    setExpanded = _useState196[1];
+  var _useState197 = useState(null),
+    _useState198 = _slicedToArray(_useState197, 2),
+    lightbox = _useState198[0],
+    setLightbox = _useState198[1];
   var sc = STATUS_COLORS[job.status] || STATUS_COLORS["Quoted"];
   var phaseDone = PHASES.filter(function (p) {
     var _job$phases;
@@ -11029,12 +11201,12 @@ function PaverJobCard(_ref61) {
 }
 
 // ── PAVER JOB FORM ────────────────────────────────────────────────────────────
-function PaverJobForm(_ref62) {
-  var job = _ref62.job,
-    onSave = _ref62.onSave,
-    onClose = _ref62.onClose,
-    _ref62$cfg = _ref62.cfg,
-    cfg = _ref62$cfg === void 0 ? HSC_SECTIONS.pavers : _ref62$cfg;
+function PaverJobForm(_ref63) {
+  var job = _ref63.job,
+    onSave = _ref63.onSave,
+    onClose = _ref63.onClose,
+    _ref63$cfg = _ref63.cfg,
+    cfg = _ref63$cfg === void 0 ? HSC_SECTIONS.pavers : _ref63$cfg;
   var blank = function blank() {
     return {
       jobName: "",
@@ -11065,10 +11237,10 @@ function PaverJobForm(_ref62) {
       phases: {}
     };
   };
-  var _useState191 = useState(job ? _objectSpread(_objectSpread({}, blank()), job) : blank()),
-    _useState192 = _slicedToArray(_useState191, 2),
-    form = _useState192[0],
-    setForm = _useState192[1];
+  var _useState199 = useState(job ? _objectSpread(_objectSpread({}, blank()), job) : blank()),
+    _useState200 = _slicedToArray(_useState199, 2),
+    form = _useState200[0],
+    setForm = _useState200[1];
   var accent = {
     from: "var(--greenD)",
     to: "var(--green)"
@@ -11444,17 +11616,17 @@ function HardscapingClientsManager() {
     });
   }, []);
   var saveClients = /*#__PURE__*/function () {
-    var _saveClients = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee21(next) {
-      return _regenerator().w(function (_context21) {
-        while (1) switch (_context21.n) {
+    var _saveClients = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee22(next) {
+      return _regenerator().w(function (_context22) {
+        while (1) switch (_context22.n) {
           case 0:
             setClients(next);
-            _context21.n = 1;
+            _context22.n = 1;
             return saveShared(KEYS.hscClients, next);
           case 1:
-            return _context21.a(2);
+            return _context22.a(2);
         }
-      }, _callee21);
+      }, _callee22);
     }));
     function saveClients(_x17) {
       return _saveClients.apply(this, arguments);
@@ -11473,23 +11645,23 @@ function HardscapingClientsManager() {
     };
   };
   var handleSave = /*#__PURE__*/function () {
-    var _handleSave = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee22(form) {
+    var _handleSave = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee23(form) {
       var next;
-      return _regenerator().w(function (_context22) {
-        while (1) switch (_context22.n) {
+      return _regenerator().w(function (_context23) {
+        while (1) switch (_context23.n) {
           case 0:
             next = editing ? clients.map(function (c) {
               return c.id === editing.id ? _objectSpread(_objectSpread({}, editing), form) : c;
             }) : [].concat(_toConsumableArray(clients), [_objectSpread(_objectSpread({}, blank()), form)]);
-            _context22.n = 1;
+            _context23.n = 1;
             return saveClients(next);
           case 1:
             setView("list");
             setEditing(null);
           case 2:
-            return _context22.a(2);
+            return _context23.a(2);
         }
-      }, _callee22);
+      }, _callee23);
     }));
     function handleSave(_x18) {
       return _handleSave.apply(this, arguments);
@@ -11497,20 +11669,20 @@ function HardscapingClientsManager() {
     return handleSave;
   }();
   var handleDelete = /*#__PURE__*/function () {
-    var _handleDelete = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee23(id) {
-      return _regenerator().w(function (_context23) {
-        while (1) switch (_context23.n) {
+    var _handleDelete = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee24(id) {
+      return _regenerator().w(function (_context24) {
+        while (1) switch (_context24.n) {
           case 0:
-            _context23.n = 1;
+            _context24.n = 1;
             return saveClients(clients.filter(function (c) {
               return c.id !== id;
             }));
           case 1:
             setConfirmDel(null);
           case 2:
-            return _context23.a(2);
+            return _context24.a(2);
         }
-      }, _callee23);
+      }, _callee24);
     }));
     function handleDelete(_x19) {
       return _handleDelete.apply(this, arguments);
@@ -11688,10 +11860,10 @@ function HardscapingClientsManager() {
     }
   }));
 }
-function HscClientForm(_ref63) {
-  var client = _ref63.client,
-    onSave = _ref63.onSave,
-    onClose = _ref63.onClose;
+function HscClientForm(_ref64) {
+  var client = _ref64.client,
+    onSave = _ref64.onSave,
+    onClose = _ref64.onClose;
   var _React$useState15 = React.useState(client ? {
       name: client.name || "",
       address: client.address || "",
@@ -11807,28 +11979,28 @@ var BLANK_LINE = function BLANK_LINE() {
   };
 };
 var EST_UNITS = ["SqFt", "LnFt", "FcFt", "CuYd", "Pcs", "Bg"];
-function EstimateGenerator(_ref64) {
-  var onBack = _ref64.onBack;
-  var _useState193 = useState([]),
-    _useState194 = _slicedToArray(_useState193, 2),
-    estimates = _useState194[0],
-    setEstimates = _useState194[1];
-  var _useState195 = useState("list"),
-    _useState196 = _slicedToArray(_useState195, 2),
-    view = _useState196[0],
-    setView = _useState196[1]; // "list" | "edit" | "preview"
-  var _useState197 = useState(null),
-    _useState198 = _slicedToArray(_useState197, 2),
-    current = _useState198[0],
-    setCurrent = _useState198[1]; // estimate being edited
-  var _useState199 = useState(null),
-    _useState200 = _slicedToArray(_useState199, 2),
-    confirmDel = _useState200[0],
-    setConfirmDel = _useState200[1];
+function EstimateGenerator(_ref65) {
+  var onBack = _ref65.onBack;
   var _useState201 = useState([]),
     _useState202 = _slicedToArray(_useState201, 2),
-    hscClients = _useState202[0],
-    setHscClients = _useState202[1];
+    estimates = _useState202[0],
+    setEstimates = _useState202[1];
+  var _useState203 = useState("list"),
+    _useState204 = _slicedToArray(_useState203, 2),
+    view = _useState204[0],
+    setView = _useState204[1]; // "list" | "edit" | "preview"
+  var _useState205 = useState(null),
+    _useState206 = _slicedToArray(_useState205, 2),
+    current = _useState206[0],
+    setCurrent = _useState206[1]; // estimate being edited
+  var _useState207 = useState(null),
+    _useState208 = _slicedToArray(_useState207, 2),
+    confirmDel = _useState208[0],
+    setConfirmDel = _useState208[1];
+  var _useState209 = useState([]),
+    _useState210 = _slicedToArray(_useState209, 2),
+    hscClients = _useState210[0],
+    setHscClients = _useState210[1];
   useEffect(function () {
     loadShared(KEYS.hscClients).then(function (d) {
       return setHscClients(d || []);
@@ -11841,17 +12013,17 @@ function EstimateGenerator(_ref64) {
   }, []); // eslint-disable-line
 
   var saveAll = /*#__PURE__*/function () {
-    var _saveAll = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee24(next) {
-      return _regenerator().w(function (_context24) {
-        while (1) switch (_context24.n) {
+    var _saveAll = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee25(next) {
+      return _regenerator().w(function (_context25) {
+        while (1) switch (_context25.n) {
           case 0:
             setEstimates(next);
-            _context24.n = 1;
+            _context25.n = 1;
             return saveShared("pps-estimates", next);
           case 1:
-            return _context24.a(2);
+            return _context25.a(2);
         }
-      }, _callee24);
+      }, _callee25);
     }));
     function saveAll(_x20) {
       return _saveAll.apply(this, arguments);
@@ -11883,24 +12055,24 @@ function EstimateGenerator(_ref64) {
     setView("preview");
   };
   var saveEstimate = /*#__PURE__*/function () {
-    var _saveEstimate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee25() {
+    var _saveEstimate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee26() {
       var next;
-      return _regenerator().w(function (_context25) {
-        while (1) switch (_context25.n) {
+      return _regenerator().w(function (_context26) {
+        while (1) switch (_context26.n) {
           case 0:
             next = estimates.find(function (e) {
               return e.id === current.id;
             }) ? estimates.map(function (e) {
               return e.id === current.id ? current : e;
             }) : [].concat(_toConsumableArray(estimates), [current]);
-            _context25.n = 1;
+            _context26.n = 1;
             return saveAll(next);
           case 1:
             setView("list");
           case 2:
-            return _context25.a(2);
+            return _context26.a(2);
         }
-      }, _callee25);
+      }, _callee26);
     }));
     function saveEstimate() {
       return _saveEstimate.apply(this, arguments);
@@ -11908,20 +12080,20 @@ function EstimateGenerator(_ref64) {
     return saveEstimate;
   }();
   var deleteEstimate = /*#__PURE__*/function () {
-    var _deleteEstimate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee26(id) {
-      return _regenerator().w(function (_context26) {
-        while (1) switch (_context26.n) {
+    var _deleteEstimate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee27(id) {
+      return _regenerator().w(function (_context27) {
+        while (1) switch (_context27.n) {
           case 0:
-            _context26.n = 1;
+            _context27.n = 1;
             return saveAll(estimates.filter(function (e) {
               return e.id !== id;
             }));
           case 1:
             setConfirmDel(null);
           case 2:
-            return _context26.a(2);
+            return _context27.a(2);
         }
-      }, _callee26);
+      }, _callee27);
     }));
     function deleteEstimate(_x21) {
       return _deleteEstimate.apply(this, arguments);
@@ -11929,10 +12101,10 @@ function EstimateGenerator(_ref64) {
     return deleteEstimate;
   }();
   var duplicateEstimate = /*#__PURE__*/function () {
-    var _duplicateEstimate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee27(est) {
+    var _duplicateEstimate = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee28(est) {
       var copy;
-      return _regenerator().w(function (_context27) {
-        while (1) switch (_context27.n) {
+      return _regenerator().w(function (_context28) {
+        while (1) switch (_context28.n) {
           case 0:
             copy = _objectSpread(_objectSpread({}, JSON.parse(JSON.stringify(est))), {}, {
               id: Date.now(),
@@ -11941,12 +12113,12 @@ function EstimateGenerator(_ref64) {
               estimateNumber: "EST-" + String(estimates.length + 1).padStart(3, "0"),
               date: todayStr()
             });
-            _context27.n = 1;
+            _context28.n = 1;
             return saveAll([].concat(_toConsumableArray(estimates), [copy]));
           case 1:
-            return _context27.a(2);
+            return _context28.a(2);
         }
-      }, _callee27);
+      }, _callee28);
     }));
     function duplicateEstimate(_x22) {
       return _duplicateEstimate.apply(this, arguments);
@@ -12859,10 +13031,10 @@ function EstimateGenerator(_ref64) {
         },
         value: current.status || "Draft",
         onChange: (/*#__PURE__*/function () {
-          var _ref65 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee28(e) {
+          var _ref66 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee29(e) {
             var updated, next;
-            return _regenerator().w(function (_context28) {
-              while (1) switch (_context28.n) {
+            return _regenerator().w(function (_context29) {
+              while (1) switch (_context29.n) {
                 case 0:
                   updated = _objectSpread(_objectSpread({}, current), {}, {
                     status: e.target.value
@@ -12871,15 +13043,15 @@ function EstimateGenerator(_ref64) {
                   next = estimates.map(function (est) {
                     return est.id === updated.id ? updated : est;
                   });
-                  _context28.n = 1;
+                  _context29.n = 1;
                   return saveAll(next);
                 case 1:
-                  return _context28.a(2);
+                  return _context29.a(2);
               }
-            }, _callee28);
+            }, _callee29);
           }));
           return function (_x23) {
-            return _ref65.apply(this, arguments);
+            return _ref66.apply(this, arguments);
           };
         }())
       }, ["Draft", "Sent", "Approved", "Declined"].map(function (s) {
@@ -13184,9 +13356,9 @@ function EstimateGenerator(_ref64) {
 }
 
 // ── HARDSCAPING PIPELINE VIEW ─────────────────────────────────────────────────
-function HscPipelineView(_ref66) {
-  var jobs = _ref66.jobs,
-    onEdit = _ref66.onEdit;
+function HscPipelineView(_ref67) {
+  var jobs = _ref67.jobs,
+    onEdit = _ref67.onEdit;
   var PIPELINE_COLS = [{
     key: "Quoted",
     label: "Quoted",
@@ -13409,45 +13581,45 @@ function HscPipelineView(_ref66) {
 }
 
 // ── PAVERS TAB ────────────────────────────────────────────────────────────────
-function HardscapeSection(_ref67) {
-  var cfg = _ref67.cfg,
-    onBack = _ref67.onBack;
-  var _useState203 = useState([]),
-    _useState204 = _slicedToArray(_useState203, 2),
-    jobs = _useState204[0],
-    setJobs = _useState204[1];
-  var _useState205 = useState(true),
-    _useState206 = _slicedToArray(_useState205, 2),
-    loading = _useState206[0],
-    setLoading = _useState206[1];
-  var _useState207 = useState(false),
-    _useState208 = _slicedToArray(_useState207, 2),
-    showForm = _useState208[0],
-    setShowForm = _useState208[1];
-  var _useState209 = useState(null),
-    _useState210 = _slicedToArray(_useState209, 2),
-    editingJob = _useState210[0],
-    setEditingJob = _useState210[1];
-  var _useState211 = useState("All"),
+function HardscapeSection(_ref68) {
+  var cfg = _ref68.cfg,
+    onBack = _ref68.onBack;
+  var _useState211 = useState([]),
     _useState212 = _slicedToArray(_useState211, 2),
-    filter = _useState212[0],
-    setFilter = _useState212[1];
-  var _useState213 = useState("All"),
+    jobs = _useState212[0],
+    setJobs = _useState212[1];
+  var _useState213 = useState(true),
     _useState214 = _slicedToArray(_useState213, 2),
-    typeFilter = _useState214[0],
-    setTypeFilter = _useState214[1];
-  var _useState215 = useState(""),
+    loading = _useState214[0],
+    setLoading = _useState214[1];
+  var _useState215 = useState(false),
     _useState216 = _slicedToArray(_useState215, 2),
-    search = _useState216[0],
-    setSearch = _useState216[1];
-  var _useState217 = useState("jobs"),
+    showForm = _useState216[0],
+    setShowForm = _useState216[1];
+  var _useState217 = useState(null),
     _useState218 = _slicedToArray(_useState217, 2),
-    section = _useState218[0],
-    setSection = _useState218[1]; // "jobs" | "estimates" | "clients" | "pipeline"
-  var _useState219 = useState(false),
+    editingJob = _useState218[0],
+    setEditingJob = _useState218[1];
+  var _useState219 = useState("All"),
     _useState220 = _slicedToArray(_useState219, 2),
-    pipelineView = _useState220[0],
-    setPipelineView = _useState220[1];
+    filter = _useState220[0],
+    setFilter = _useState220[1];
+  var _useState221 = useState("All"),
+    _useState222 = _slicedToArray(_useState221, 2),
+    typeFilter = _useState222[0],
+    setTypeFilter = _useState222[1];
+  var _useState223 = useState(""),
+    _useState224 = _slicedToArray(_useState223, 2),
+    search = _useState224[0],
+    setSearch = _useState224[1];
+  var _useState225 = useState("jobs"),
+    _useState226 = _slicedToArray(_useState225, 2),
+    section = _useState226[0],
+    setSection = _useState226[1]; // "jobs" | "estimates" | "clients" | "pipeline"
+  var _useState227 = useState(false),
+    _useState228 = _slicedToArray(_useState227, 2),
+    pipelineView = _useState228[0],
+    setPipelineView = _useState228[1];
   useEffect(function () {
     loadShared(cfg.storeKey).then(function (d) {
       setJobs(d || []);
@@ -13455,17 +13627,17 @@ function HardscapeSection(_ref67) {
     });
   }, [cfg.storeKey]);
   var saveJobs = /*#__PURE__*/function () {
-    var _saveJobs = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee29(next) {
-      return _regenerator().w(function (_context29) {
-        while (1) switch (_context29.n) {
+    var _saveJobs = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee30(next) {
+      return _regenerator().w(function (_context30) {
+        while (1) switch (_context30.n) {
           case 0:
             setJobs(next);
-            _context29.n = 1;
+            _context30.n = 1;
             return saveShared(cfg.storeKey, next);
           case 1:
-            return _context29.a(2);
+            return _context30.a(2);
         }
-      }, _callee29);
+      }, _callee30);
     }));
     function saveJobs(_x24) {
       return _saveJobs.apply(this, arguments);
@@ -13473,10 +13645,10 @@ function HardscapeSection(_ref67) {
     return saveJobs;
   }();
   var handleSave = /*#__PURE__*/function () {
-    var _handleSave2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee30(form) {
+    var _handleSave2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee31(form) {
       var next;
-      return _regenerator().w(function (_context30) {
-        while (1) switch (_context30.n) {
+      return _regenerator().w(function (_context31) {
+        while (1) switch (_context31.n) {
           case 0:
             if (editingJob) next = jobs.map(function (j) {
               return j.id === editingJob.id ? _objectSpread(_objectSpread({}, j), form) : j;
@@ -13484,15 +13656,15 @@ function HardscapeSection(_ref67) {
               id: Date.now(),
               createdAt: new Date().toISOString()
             })]);
-            _context30.n = 1;
+            _context31.n = 1;
             return saveJobs(next);
           case 1:
             setShowForm(false);
             setEditingJob(null);
           case 2:
-            return _context30.a(2);
+            return _context31.a(2);
         }
-      }, _callee30);
+      }, _callee31);
     }));
     function handleSave(_x25) {
       return _handleSave2.apply(this, arguments);
@@ -13500,18 +13672,18 @@ function HardscapeSection(_ref67) {
     return handleSave;
   }();
   var handleDelete = /*#__PURE__*/function () {
-    var _handleDelete2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee31(id) {
-      return _regenerator().w(function (_context31) {
-        while (1) switch (_context31.n) {
+    var _handleDelete2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee32(id) {
+      return _regenerator().w(function (_context32) {
+        while (1) switch (_context32.n) {
           case 0:
-            _context31.n = 1;
+            _context32.n = 1;
             return saveJobs(jobs.filter(function (j) {
               return j.id !== id;
             }));
           case 1:
-            return _context31.a(2);
+            return _context32.a(2);
         }
-      }, _callee31);
+      }, _callee32);
     }));
     function handleDelete(_x26) {
       return _handleDelete2.apply(this, arguments);
@@ -13842,18 +14014,18 @@ function HardscapeSection(_ref67) {
   })));
 }
 function HardscapingHub() {
-  var _useState221 = useState(false),
-    _useState222 = _slicedToArray(_useState221, 2),
-    pinUnlocked = _useState222[0],
-    setPinUnlocked = _useState222[1];
-  var _useState223 = useState(false),
-    _useState224 = _slicedToArray(_useState223, 2),
-    showPin = _useState224[0],
-    setShowPin = _useState224[1];
-  var _useState225 = useState(null),
-    _useState226 = _slicedToArray(_useState225, 2),
-    sub = _useState226[0],
-    setSub = _useState226[1]; // null | "pavers" | "decksfence"
+  var _useState229 = useState(false),
+    _useState230 = _slicedToArray(_useState229, 2),
+    pinUnlocked = _useState230[0],
+    setPinUnlocked = _useState230[1];
+  var _useState231 = useState(false),
+    _useState232 = _slicedToArray(_useState231, 2),
+    showPin = _useState232[0],
+    setShowPin = _useState232[1];
+  var _useState233 = useState(null),
+    _useState234 = _slicedToArray(_useState233, 2),
+    sub = _useState234[0],
+    setSub = _useState234[1]; // null | "pavers" | "decksfence"
 
   if (!pinUnlocked) {
     return /*#__PURE__*/React.createElement("div", {
@@ -14022,13 +14194,13 @@ function HardscapingHub() {
 }
 
 // ── SCHEDULE TAB (Summer + Winter toggle) ─────────────────────────────────────
-function ScheduleTab(_ref68) {
-  var clients = _ref68.clients,
-    summerServices = _ref68.summerServices,
-    winterServices = _ref68.winterServices,
-    setSummerServices = _ref68.setSummerServices,
-    setWinterServices = _ref68.setWinterServices,
-    employee = _ref68.employee;
+function ScheduleTab(_ref69) {
+  var clients = _ref69.clients,
+    summerServices = _ref69.summerServices,
+    winterServices = _ref69.winterServices,
+    setSummerServices = _ref69.setSummerServices,
+    setWinterServices = _ref69.setWinterServices,
+    employee = _ref69.employee;
   var _React$useState17 = React.useState("summer"),
     _React$useState18 = _slicedToArray(_React$useState17, 2),
     season = _React$useState18[0],
@@ -14092,10 +14264,10 @@ function ScheduleTab(_ref68) {
 }
 
 // ── TIME PICKER COMPONENT (12-hour) ───────────────────────────────────────────
-function TimePicker(_ref69) {
-  var value = _ref69.value,
-    _onChange6 = _ref69.onChange,
-    label = _ref69.label;
+function TimePicker(_ref70) {
+  var value = _ref70.value,
+    _onChange6 = _ref70.onChange,
+    label = _ref70.label;
   var hours12 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   var minutes = ["00", "15", "30", "45"];
   // Parse stored 24h value → 12h display
@@ -14205,9 +14377,9 @@ function TimePicker(_ref69) {
 }
 
 // ── SHIFTS TAB ────────────────────────────────────────────────────────────────
-function ShiftsTab(_ref70) {
-  var employees = _ref70.employees,
-    employeeRole = _ref70.employeeRole;
+function ShiftsTab(_ref71) {
+  var employees = _ref71.employees,
+    employeeRole = _ref71.employeeRole;
   var _React$useState19 = React.useState([]),
     _React$useState20 = _slicedToArray(_React$useState19, 2),
     shifts = _React$useState20[0],
@@ -14245,16 +14417,16 @@ function ShiftsTab(_ref70) {
     });
   }, []);
   var save = /*#__PURE__*/function () {
-    var _save2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee32() {
+    var _save2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee33() {
       var start, end, mins, hours, entry, updated;
-      return _regenerator().w(function (_context32) {
-        while (1) switch (_context32.n) {
+      return _regenerator().w(function (_context33) {
+        while (1) switch (_context33.n) {
           case 0:
             if (!(!form.startTime || !form.endTime)) {
-              _context32.n = 1;
+              _context33.n = 1;
               break;
             }
-            return _context32.a(2);
+            return _context33.a(2);
           case 1:
             start = new Date("".concat(form.date, "T").concat(form.startTime));
             end = new Date("".concat(form.date, "T").concat(form.endTime));
@@ -14278,7 +14450,7 @@ function ShiftsTab(_ref70) {
               return b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime);
             });
             setShifts(updated);
-            _context32.n = 2;
+            _context33.n = 2;
             return saveShared(KEYS.shifts, updated);
           case 2:
             setShowForm(false);
@@ -14291,9 +14463,9 @@ function ShiftsTab(_ref70) {
               notes: ""
             });
           case 3:
-            return _context32.a(2);
+            return _context33.a(2);
         }
-      }, _callee32);
+      }, _callee33);
     }));
     function save() {
       return _save2.apply(this, arguments);
@@ -14301,21 +14473,21 @@ function ShiftsTab(_ref70) {
     return save;
   }();
   var deleteShift = /*#__PURE__*/function () {
-    var _deleteShift = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee33(id) {
+    var _deleteShift = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee34(id) {
       var updated;
-      return _regenerator().w(function (_context33) {
-        while (1) switch (_context33.n) {
+      return _regenerator().w(function (_context34) {
+        while (1) switch (_context34.n) {
           case 0:
             updated = shifts.filter(function (s) {
               return s.id !== id;
             });
             setShifts(updated);
-            _context33.n = 1;
+            _context34.n = 1;
             return saveShared(KEYS.shifts, updated);
           case 1:
-            return _context33.a(2);
+            return _context34.a(2);
         }
-      }, _callee33);
+      }, _callee34);
     }));
     function deleteShift(_x27) {
       return _deleteShift.apply(this, arguments);
@@ -14726,66 +14898,66 @@ function ShiftsTab(_ref70) {
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
-  var _useState227 = useState(function () {
+  var _useState235 = useState(function () {
       try {
         return localStorage.getItem(KEYS.savedEmployee) ? "app" : "login";
-      } catch (_unused12) {
+      } catch (_unused13) {
         return "login";
       }
     }),
-    _useState228 = _slicedToArray(_useState227, 2),
-    screen = _useState228[0],
-    setScreen = _useState228[1];
-  var _useState229 = useState(function () {
-      try {
-        return localStorage.getItem(KEYS.savedEmployee) || null;
-      } catch (_unused13) {
-        return null;
-      }
-    }),
-    _useState230 = _slicedToArray(_useState229, 2),
-    employee = _useState230[0],
-    setEmployee = _useState230[1];
-  var _useState231 = useState(function () {
-      try {
-        return localStorage.getItem(KEYS.savedRole) || "all";
-      } catch (_unused14) {
-        return "all";
-      }
-    }),
-    _useState232 = _slicedToArray(_useState231, 2),
-    employeeRole = _useState232[0],
-    setEmployeeRole = _useState232[1];
-  var _useState233 = useState(function () {
-      try {
-        return localStorage.getItem("pps-isowner") === "true";
-      } catch (_unused15) {
-        return false;
-      }
-    }),
-    _useState234 = _slicedToArray(_useState233, 2),
-    isOwner = _useState234[0],
-    setIsOwner = _useState234[1];
-  EMP_VIEW = !isOwner;
-  var _useState235 = useState("clients"),
     _useState236 = _slicedToArray(_useState235, 2),
-    tab = _useState236[0],
-    setTab = _useState236[1];
+    screen = _useState236[0],
+    setScreen = _useState236[1];
   var _useState237 = useState(function () {
       try {
-        return localStorage.getItem("pps-division") || null;
-      } catch (_unused16) {
+        return localStorage.getItem(KEYS.savedEmployee) || null;
+      } catch (_unused14) {
         return null;
       }
     }),
     _useState238 = _slicedToArray(_useState237, 2),
-    division = _useState238[0],
-    setDivision = _useState238[1];
+    employee = _useState238[0],
+    setEmployee = _useState238[1];
+  var _useState239 = useState(function () {
+      try {
+        return localStorage.getItem(KEYS.savedRole) || "all";
+      } catch (_unused15) {
+        return "all";
+      }
+    }),
+    _useState240 = _slicedToArray(_useState239, 2),
+    employeeRole = _useState240[0],
+    setEmployeeRole = _useState240[1];
+  var _useState241 = useState(function () {
+      try {
+        return localStorage.getItem("pps-isowner") === "true";
+      } catch (_unused16) {
+        return false;
+      }
+    }),
+    _useState242 = _slicedToArray(_useState241, 2),
+    isOwner = _useState242[0],
+    setIsOwner = _useState242[1];
+  EMP_VIEW = !isOwner;
+  var _useState243 = useState("clients"),
+    _useState244 = _slicedToArray(_useState243, 2),
+    tab = _useState244[0],
+    setTab = _useState244[1];
+  var _useState245 = useState(function () {
+      try {
+        return localStorage.getItem("pps-division") || null;
+      } catch (_unused17) {
+        return null;
+      }
+    }),
+    _useState246 = _slicedToArray(_useState245, 2),
+    division = _useState246[0],
+    setDivision = _useState246[1];
   var setDiv = function setDiv(d) {
     setDivision(d);
     try {
       localStorage.setItem("pps-division", d || "");
-    } catch (_unused17) {}
+    } catch (_unused18) {}
     if (d) {
       history.pushState({
         nav: "division",
@@ -14793,30 +14965,30 @@ function App() {
       }, "");
     }
   };
-  var _useState239 = useState(false),
-    _useState240 = _slicedToArray(_useState239, 2),
-    showAddClient = _useState240[0],
-    setShowAddClient = _useState240[1];
-  var _useState241 = useState(false),
-    _useState242 = _slicedToArray(_useState241, 2),
-    showAdmin = _useState242[0],
-    setShowAdmin = _useState242[1];
-  var _useState243 = useState(false),
-    _useState244 = _slicedToArray(_useState243, 2),
-    showEmployeeReport = _useState244[0],
-    setShowEmployeeReport = _useState244[1];
-  var _useState245 = useState(null),
-    _useState246 = _slicedToArray(_useState245, 2),
-    backupConfirm = _useState246[0],
-    setBackupConfirm = _useState246[1]; // null | 'export' | 'import'
-  var _useState247 = useState(null),
+  var _useState247 = useState(false),
     _useState248 = _slicedToArray(_useState247, 2),
-    pendingImportFile = _useState248[0],
-    setPendingImportFile = _useState248[1];
-  var _useState249 = useState(null),
+    showAddClient = _useState248[0],
+    setShowAddClient = _useState248[1];
+  var _useState249 = useState(false),
     _useState250 = _slicedToArray(_useState249, 2),
-    adminSection = _useState250[0],
-    setAdminSection = _useState250[1]; // null | "report" | "rollover" | "employees"
+    showAdmin = _useState250[0],
+    setShowAdmin = _useState250[1];
+  var _useState251 = useState(false),
+    _useState252 = _slicedToArray(_useState251, 2),
+    showEmployeeReport = _useState252[0],
+    setShowEmployeeReport = _useState252[1];
+  var _useState253 = useState(null),
+    _useState254 = _slicedToArray(_useState253, 2),
+    backupConfirm = _useState254[0],
+    setBackupConfirm = _useState254[1]; // null | 'export' | 'import'
+  var _useState255 = useState(null),
+    _useState256 = _slicedToArray(_useState255, 2),
+    pendingImportFile = _useState256[0],
+    setPendingImportFile = _useState256[1];
+  var _useState257 = useState(null),
+    _useState258 = _slicedToArray(_useState257, 2),
+    adminSection = _useState258[0],
+    setAdminSection = _useState258[1]; // null | "report" | "rollover" | "employees"
 
   // Handle Android/browser back button
   useEffect(function () {
@@ -14840,7 +15012,7 @@ function App() {
         setDivision(null);
         try {
           localStorage.setItem("pps-division", "");
-        } catch (_unused18) {}
+        } catch (_unused19) {}
         return;
       }
     };
@@ -14870,53 +15042,53 @@ function App() {
       return setAllEmployeesForShifts(d || []);
     });
   }, []);
-  var _useState251 = useState(false),
-    _useState252 = _slicedToArray(_useState251, 2),
-    loading = _useState252[0],
-    setLoading = _useState252[1];
-  var _useState253 = useState(null),
-    _useState254 = _slicedToArray(_useState253, 2),
-    lastSync = _useState254[0],
-    setLastSync = _useState254[1];
-  var _useState255 = useState(false),
-    _useState256 = _slicedToArray(_useState255, 2),
-    syncing = _useState256[0],
-    setSyncing = _useState256[1];
-  var _useState257 = useState([]),
-    _useState258 = _slicedToArray(_useState257, 2),
-    clients = _useState258[0],
-    setClients = _useState258[1];
-  var _useState259 = useState([]),
+  var _useState259 = useState(false),
     _useState260 = _slicedToArray(_useState259, 2),
-    summerServices = _useState260[0],
-    setSummerServices = _useState260[1];
-  var _useState261 = useState([]),
+    loading = _useState260[0],
+    setLoading = _useState260[1];
+  var _useState261 = useState(null),
     _useState262 = _slicedToArray(_useState261, 2),
-    winterServices = _useState262[0],
-    setWinterServices = _useState262[1];
-  var _useState263 = useState([]),
+    lastSync = _useState262[0],
+    setLastSync = _useState262[1];
+  var _useState263 = useState(false),
     _useState264 = _slicedToArray(_useState263, 2),
-    paverJobs = _useState264[0],
-    setPaverJobs = _useState264[1];
-  var _useState265 = useState({}),
+    syncing = _useState264[0],
+    setSyncing = _useState264[1];
+  var _useState265 = useState([]),
     _useState266 = _slicedToArray(_useState265, 2),
-    carries = _useState266[0],
-    setCarriesShared = _useState266[1];
-  var _useState267 = useState({}),
+    clients = _useState266[0],
+    setClients = _useState266[1];
+  var _useState267 = useState([]),
     _useState268 = _slicedToArray(_useState267, 2),
-    snowDays = _useState268[0],
-    setSnowDaysShared = _useState268[1];
-  var _useState269 = useState(function () {
+    summerServices = _useState268[0],
+    setSummerServices = _useState268[1];
+  var _useState269 = useState([]),
+    _useState270 = _slicedToArray(_useState269, 2),
+    winterServices = _useState270[0],
+    setWinterServices = _useState270[1];
+  var _useState271 = useState([]),
+    _useState272 = _slicedToArray(_useState271, 2),
+    paverJobs = _useState272[0],
+    setPaverJobs = _useState272[1];
+  var _useState273 = useState({}),
+    _useState274 = _slicedToArray(_useState273, 2),
+    carries = _useState274[0],
+    setCarriesShared = _useState274[1];
+  var _useState275 = useState({}),
+    _useState276 = _slicedToArray(_useState275, 2),
+    snowDays = _useState276[0],
+    setSnowDaysShared = _useState276[1];
+  var _useState277 = useState(function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused19) {
+      } catch (_unused20) {
         return "contact";
       }
     }),
-    _useState270 = _slicedToArray(_useState269, 2),
-    displayMode = _useState270[0],
-    setDisplayMode = _useState270[1];
-  var syncData = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee34() {
+    _useState278 = _slicedToArray(_useState277, 2),
+    displayMode = _useState278[0],
+    setDisplayMode = _useState278[1];
+  var syncData = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee35() {
     var quiet,
       _yield$Promise$all,
       _yield$Promise$all2,
@@ -14925,16 +15097,16 @@ function App() {
       w,
       car,
       snow,
-      _args34 = arguments;
-    return _regenerator().w(function (_context34) {
-      while (1) switch (_context34.n) {
+      _args35 = arguments;
+    return _regenerator().w(function (_context35) {
+      while (1) switch (_context35.n) {
         case 0:
-          quiet = _args34.length > 0 && _args34[0] !== undefined ? _args34[0] : false;
+          quiet = _args35.length > 0 && _args35[0] !== undefined ? _args35[0] : false;
           if (!quiet) setSyncing(true);
-          _context34.n = 1;
+          _context35.n = 1;
           return Promise.all([loadShared(KEYS.clients), loadShared(KEYS.summer), loadShared(KEYS.winter), loadShared(KEYS.carries), loadShared(KEYS.snowDays)]);
         case 1:
-          _yield$Promise$all = _context34.v;
+          _yield$Promise$all = _context35.v;
           _yield$Promise$all2 = _slicedToArray(_yield$Promise$all, 5);
           c = _yield$Promise$all2[0];
           s = _yield$Promise$all2[1];
@@ -14949,9 +15121,9 @@ function App() {
           setLastSync(new Date());
           setSyncing(false);
         case 2:
-          return _context34.a(2);
+          return _context35.a(2);
       }
-    }, _callee34);
+    }, _callee35);
   })), []);
   useEffect(function () {
     if (screen !== "app") return;
@@ -14999,7 +15171,7 @@ function App() {
         localStorage.setItem(KEYS.savedRole, role || "all");
         localStorage.setItem("pps-isowner", owner ? "true" : "false");
         localStorage.setItem("pps-division", "");
-      } catch (_unused20) {}
+      } catch (_unused21) {}
       setScreen("app");
     }
   });
@@ -15186,7 +15358,7 @@ function App() {
         localStorage.removeItem(KEYS.savedEmployee);
         localStorage.removeItem(KEYS.savedRole);
         localStorage.removeItem("pps-isowner");
-      } catch (_unused21) {}
+      } catch (_unused22) {}
       setScreen("login");
     },
     title: "Sign out",
@@ -15603,7 +15775,7 @@ function App() {
           if (k && k.startsWith("pps-")) {
             try {
               out[k] = JSON.parse(localStorage.getItem(k));
-            } catch (_unused22) {
+            } catch (_unused23) {
               out[k] = localStorage.getItem(k);
             }
           }
@@ -15677,22 +15849,22 @@ function App() {
       fontSize: "14px"
     }
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
-    onClick: /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee35() {
-      var text, data, count, _i2, _Object$entries2, _Object$entries2$_i, k, v, _t4;
-      return _regenerator().w(function (_context35) {
-        while (1) switch (_context35.p = _context35.n) {
+    onClick: /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee36() {
+      var text, data, count, _i2, _Object$entries2, _Object$entries2$_i, k, v, _t5;
+      return _regenerator().w(function (_context36) {
+        while (1) switch (_context36.p = _context36.n) {
           case 0:
             if (pendingImportFile) {
-              _context35.n = 1;
+              _context36.n = 1;
               break;
             }
-            return _context35.a(2);
+            return _context36.a(2);
           case 1:
-            _context35.p = 1;
-            _context35.n = 2;
+            _context36.p = 1;
+            _context36.n = 2;
             return pendingImportFile.text();
           case 2:
-            text = _context35.v;
+            text = _context36.v;
             data = JSON.parse(text);
             count = 0;
             for (_i2 = 0, _Object$entries2 = Object.entries(data); _i2 < _Object$entries2.length; _i2++) {
@@ -15704,19 +15876,19 @@ function App() {
             }
             alert("Imported " + count + " data keys. Reloading…");
             syncData();
-            _context35.n = 4;
+            _context36.n = 4;
             break;
           case 3:
-            _context35.p = 3;
-            _t4 = _context35.v;
-            alert("Import failed: " + _t4.message);
+            _context36.p = 3;
+            _t5 = _context36.v;
+            alert("Import failed: " + _t5.message);
           case 4:
             setBackupConfirm(null);
             setPendingImportFile(null);
           case 5:
-            return _context35.a(2);
+            return _context36.a(2);
         }
-      }, _callee35, null, [[1, 3]]);
+      }, _callee36, null, [[1, 3]]);
     })),
     style: {
       flex: 1,
@@ -15734,7 +15906,8 @@ function App() {
     summerServices: summerServices,
     winterServices: winterServices,
     clients: clients,
-    selectedDate: todayStr(),
+    selectedDate: torontoDate(),
+    employee: employee,
     onClose: function onClose() {
       return setShowEmployeeReport(false);
     }
@@ -15755,6 +15928,10 @@ function App() {
     setSummerServices: setSummerServices,
     setWinterServices: setWinterServices,
     onClose: function onClose() {
+      return setAdminSection(null);
+    }
+  }) : adminSection === "sendreport" ? /*#__PURE__*/React.createElement(SendReportNow, {
+    onBack: function onBack() {
       return setAdminSection(null);
     }
   }) : adminSection === "employees" ? /*#__PURE__*/React.createElement(EmployeeManager, {
@@ -15839,6 +16016,41 @@ function App() {
       marginTop: "2px"
     }
   }, "Add, remove and manage crew PINs"))), /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      return setAdminSection("sendreport");
+    },
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "14px",
+      background: "var(--bg)",
+      border: "1px solid var(--line)",
+      borderRadius: "10px",
+      padding: "16px 18px",
+      cursor: "pointer",
+      textAlign: "left",
+      fontFamily: "inherit",
+      width: "100%"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: "28px"
+    }
+  }, /*#__PURE__*/React.createElement(Ico, {
+    n: "clipboard"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "15px",
+      fontWeight: 700,
+      color: "var(--text)"
+    }
+  }, "Send Today's Report"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "12px",
+      color: "var(--dim)",
+      marginTop: "2px"
+    }
+  }, "Email the combined crew report now"))), /*#__PURE__*/React.createElement("button", {
     onClick: function onClick() {
       return setAdminSection("report");
     },
