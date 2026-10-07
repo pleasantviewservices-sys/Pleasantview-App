@@ -8017,24 +8017,32 @@ function ClientsTab(_ref48) {
     _useState152 = _slicedToArray(_useState151, 2),
     seasonFilter = _useState152[0],
     setSeasonFilter = _useState152[1]; // master list filter: all | summer | winter | both
-  var _useState153 = useState(false),
+  var _useState153 = useState("all"),
     _useState154 = _slicedToArray(_useState153, 2),
-    showAddLocal = _useState154[0],
-    setShowAddLocal = _useState154[1];
+    crewFilter = _useState154[0],
+    setCrewFilter = _useState154[1]; // owner snow view: all | __none | <employee name>
+  var _useState155 = useState(false),
+    _useState156 = _slicedToArray(_useState155, 2),
+    crewCopied = _useState156[0],
+    setCrewCopied = _useState156[1];
+  var _useState157 = useState(false),
+    _useState158 = _slicedToArray(_useState157, 2),
+    showAddLocal = _useState158[0],
+    setShowAddLocal = _useState158[1];
   var showAdd = showAddProp !== undefined ? showAddProp : showAddLocal;
   var setShowAdd = setShowAddProp !== undefined ? setShowAddProp : setShowAddLocal;
-  var _useState155 = useState(null),
-    _useState156 = _slicedToArray(_useState155, 2),
-    editClient = _useState156[0],
-    setEditClient = _useState156[1];
-  var _useState157 = useState(null),
-    _useState158 = _slicedToArray(_useState157, 2),
-    historyClient = _useState158[0],
-    setHistoryClient = _useState158[1];
-  var _useState159 = useState(false),
+  var _useState159 = useState(null),
     _useState160 = _slicedToArray(_useState159, 2),
-    showArchives = _useState160[0],
-    setShowArchives = _useState160[1];
+    editClient = _useState160[0],
+    setEditClient = _useState160[1];
+  var _useState161 = useState(null),
+    _useState162 = _slicedToArray(_useState161, 2),
+    historyClient = _useState162[0],
+    setHistoryClient = _useState162[1];
+  var _useState163 = useState(false),
+    _useState164 = _slicedToArray(_useState163, 2),
+    showArchives = _useState164[0],
+    setShowArchives = _useState164[1];
   var _React$useState3 = React.useState([]),
     _React$useState4 = _slicedToArray(_React$useState3, 2),
     allEmployees = _React$useState4[0],
@@ -8044,18 +8052,18 @@ function ClientsTab(_ref48) {
       return setAllEmployees(d || []);
     });
   }, []);
-  var _useState161 = useState(null),
-    _useState162 = _slicedToArray(_useState161, 2),
-    confirmDelete = _useState162[0],
-    setConfirmDelete = _useState162[1];
-  var _useState163 = useState(null),
-    _useState164 = _slicedToArray(_useState163, 2),
-    confirmVisitDelete = _useState164[0],
-    setConfirmVisitDelete = _useState164[1]; // { visit, isSummer }
   var _useState165 = useState(null),
     _useState166 = _slicedToArray(_useState165, 2),
-    confirmArchiveDelete = _useState166[0],
-    setConfirmArchiveDelete = _useState166[1]; // id
+    confirmDelete = _useState166[0],
+    setConfirmDelete = _useState166[1];
+  var _useState167 = useState(null),
+    _useState168 = _slicedToArray(_useState167, 2),
+    confirmVisitDelete = _useState168[0],
+    setConfirmVisitDelete = _useState168[1]; // { visit, isSummer }
+  var _useState169 = useState(null),
+    _useState170 = _slicedToArray(_useState169, 2),
+    confirmArchiveDelete = _useState170[0],
+    setConfirmArchiveDelete = _useState170[1]; // id
   var blankForm = function blankForm() {
     return {
       name: "",
@@ -8076,14 +8084,14 @@ function ClientsTab(_ref48) {
       assignedEmployees: []
     };
   };
-  var _useState167 = useState(blankForm()),
-    _useState168 = _slicedToArray(_useState167, 2),
-    form = _useState168[0],
-    setForm = _useState168[1];
-  var _useState169 = useState(""),
-    _useState170 = _slicedToArray(_useState169, 2),
-    search = _useState170[0],
-    setSearch = _useState170[1];
+  var _useState171 = useState(blankForm()),
+    _useState172 = _slicedToArray(_useState171, 2),
+    form = _useState172[0],
+    setForm = _useState172[1];
+  var _useState173 = useState(""),
+    _useState174 = _slicedToArray(_useState173, 2),
+    search = _useState174[0],
+    setSearch = _useState174[1];
   var changeDisplayMode = function changeDisplayMode(mode) {
     setDisplayMode(mode);
     try {
@@ -8109,7 +8117,26 @@ function ClientsTab(_ref48) {
   }) : roleClients.filter(function (c) {
     return snowDivision ? isWinC(c) : isSumC(c);
   });
-  var sortedClients = _toConsumableArray(seasonClients).sort(function (a, b) {
+  // Owner snow view: filter the list by who it is assigned to
+  var isWinterView = isOwner && (isMaster || snowDivision);
+  var winterClients = roleClients.filter(isWinC);
+  var assignedTo = function assignedTo(c, name) {
+    return (c.assignedEmployees || []).includes(name);
+  };
+  var crewNames = allEmployees.map(function (e) {
+    return e.name;
+  }).sort(function (a, b) {
+    return a.localeCompare(b);
+  });
+  var unassignedCount = winterClients.filter(function (c) {
+    return !(c.assignedEmployees || []).length;
+  }).length;
+  var crewFiltered = !isWinterView || crewFilter === "all" ? seasonClients : crewFilter === "__none" ? seasonClients.filter(function (c) {
+    return isWinC(c) && !(c.assignedEmployees || []).length;
+  }) : seasonClients.filter(function (c) {
+    return assignedTo(c, crewFilter);
+  });
+  var sortedClients = _toConsumableArray(crewFiltered).sort(function (a, b) {
     return clientLabel(a, displayMode).localeCompare(clientLabel(b, displayMode), undefined, {
       sensitivity: "base"
     });
@@ -8228,10 +8255,10 @@ function ClientsTab(_ref48) {
     }
     return removeClient;
   }();
-  var _useState171 = useState(null),
-    _useState172 = _slicedToArray(_useState171, 2),
-    deletedVisit = _useState172[0],
-    setDeletedVisit = _useState172[1]; // { visit, isSummer, timer }
+  var _useState175 = useState(null),
+    _useState176 = _slicedToArray(_useState175, 2),
+    deletedVisit = _useState176[0],
+    setDeletedVisit = _useState176[1]; // { visit, isSummer, timer }
 
   var deleteVisit = /*#__PURE__*/function () {
     var _deleteVisit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16(visit, isSummer) {
@@ -8467,7 +8494,119 @@ function ClientsTab(_ref48) {
         opacity: 0.7
       }
     }, n));
-  })), deletedVisit && /*#__PURE__*/React.createElement("div", {
+  })), isWinterView && crewNames.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: "14px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "11px",
+      color: "var(--faint)",
+      fontWeight: 700,
+      letterSpacing: "0.06em",
+      marginBottom: "6px"
+    }
+  }, "SNOW CREW \u2014 TAP A NAME TO SEE THEIR PROPERTIES"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: "6px",
+      flexWrap: "wrap"
+    }
+  }, [["all", "Everyone", winterClients.length]].concat(_toConsumableArray(crewNames.map(function (n) {
+    return [n, n, winterClients.filter(function (c) {
+      return assignedTo(c, n);
+    }).length];
+  })), [["__none", "Unassigned", unassignedCount]]).map(function (_ref53) {
+    var _ref54 = _slicedToArray(_ref53, 3),
+      key = _ref54[0],
+      label = _ref54[1],
+      n = _ref54[2];
+    var on = crewFilter === key;
+    var warn = key === "__none" && n > 0;
+    return /*#__PURE__*/React.createElement("button", {
+      key: key,
+      onClick: function onClick() {
+        setCrewFilter(key);
+        setCrewCopied(false);
+      },
+      style: {
+        background: on ? "rgba(120,180,60,0.18)" : "transparent",
+        border: "1px solid ".concat(on ? "color-mix(in srgb, var(--green) 53%, transparent)" : warn ? "rgba(251,191,36,0.4)" : "var(--line)"),
+        borderRadius: "20px",
+        padding: "6px 12px",
+        color: on ? "var(--green)" : warn ? "var(--amber)" : "var(--dim)",
+        cursor: "pointer",
+        fontSize: "12px",
+        fontWeight: 700,
+        fontFamily: "inherit"
+      }
+    }, label, " ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        opacity: 0.7
+      }
+    }, n));
+  })), crewFilter !== "all" && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "10px",
+      marginTop: "10px",
+      background: "var(--card)",
+      border: "1px solid var(--line)",
+      borderRadius: "10px",
+      padding: "10px 14px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: "13px",
+      color: "var(--text)",
+      fontWeight: 700,
+      minWidth: 0
+    }
+  }, crewFilter === "__none" ? "Unassigned" : crewFilter, ": ", visibleClients.length, " snow propert", visibleClients.length === 1 ? "y" : "ies"), visibleClients.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      var text = "".concat(crewFilter === "__none" ? "Unassigned snow properties" : crewFilter + " — snow properties", " (").concat(visibleClients.length, ")\n") + visibleClients.map(function (c, i) {
+        return "".concat(i + 1, ". ").concat(clientLabel(c, displayMode), " \u2014 ").concat(c.address);
+      }).join("\n");
+      var done = function done() {
+        setCrewCopied(true);
+        setTimeout(function () {
+          return setCrewCopied(false);
+        }, 2500);
+      };
+      var fallback = function fallback() {
+        try {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          done();
+        } catch (_unused10) {}
+      };
+      try {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } catch (_unused11) {
+        fallback();
+      }
+    },
+    style: {
+      background: "rgba(120,180,60,0.1)",
+      border: "1px solid rgba(120,180,60,0.3)",
+      borderRadius: "8px",
+      padding: "7px 12px",
+      color: "var(--green)",
+      cursor: "pointer",
+      fontSize: "12px",
+      fontWeight: 700,
+      fontFamily: "inherit",
+      whiteSpace: "nowrap"
+    }
+  }, crewCopied ? "Copied ✓" : "Copy list"))), deletedVisit && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -8937,13 +9076,13 @@ function ClientsTab(_ref48) {
         display: "flex",
         gap: "8px"
       }
-    }, opts.map(function (_ref53) {
-      var _ref54 = _slicedToArray(_ref53, 5),
-        key = _ref54[0],
-        label = _ref54[1],
-        su = _ref54[2],
-        wi = _ref54[3],
-        col = _ref54[4];
+    }, opts.map(function (_ref55) {
+      var _ref56 = _slicedToArray(_ref55, 5),
+        key = _ref56[0],
+        label = _ref56[1],
+        su = _ref56[2],
+        wi = _ref56[3],
+        col = _ref56[4];
       var active = sumOn === su && winOn === wi;
       return /*#__PURE__*/React.createElement("button", {
         key: key,
@@ -9597,10 +9736,10 @@ function generateSeasonArchiveReport(archive, logoDataUrl) {
   (clientSnapshot || []).forEach(function (c) {
     clientLookup[c.id] = c;
   });
-  var clientSections = Object.entries(byClient).map(function (_ref55) {
-    var _ref56 = _slicedToArray(_ref55, 2),
-      cid = _ref56[0],
-      cvs = _ref56[1];
+  var clientSections = Object.entries(byClient).map(function (_ref57) {
+    var _ref58 = _slicedToArray(_ref57, 2),
+      cid = _ref58[0],
+      cvs = _ref58[1];
     var c = clientLookup[cid] || {};
     var name = c.name || c.businessName || "Unknown Client";
     var addr = c.address || "";
@@ -9706,10 +9845,10 @@ function generateDayReport(date, clients, summerServices, winterServices, logoDa
 }
 
 // ── DAY REPORT BUTTON ────────────────────────────────────────────────────────
-function DayReportButton(_ref57) {
-  var clients = _ref57.clients,
-    summerServices = _ref57.summerServices,
-    winterServices = _ref57.winterServices;
+function DayReportButton(_ref59) {
+  var clients = _ref59.clients,
+    summerServices = _ref59.summerServices,
+    winterServices = _ref59.winterServices;
   var today = todayStr();
   var _React$useState5 = React.useState(false),
     _React$useState6 = _slicedToArray(_React$useState5, 2),
@@ -9817,12 +9956,12 @@ function generateReport(service, clientName, clientAddr, season, flatConfig, log
 }
 
 // ── SERVICE TAB ───────────────────────────────────────────────────────────────
-function ServiceTab(_ref58) {
-  var season = _ref58.season,
-    clients = _ref58.clients,
-    services = _ref58.services,
-    setServices = _ref58.setServices,
-    employee = _ref58.employee;
+function ServiceTab(_ref60) {
+  var season = _ref60.season,
+    clients = _ref60.clients,
+    services = _ref60.services,
+    setServices = _ref60.setServices,
+    employee = _ref60.employee;
   var isSummer = season === "summer";
   var accent = isSummer ? {
     from: "var(--greenD)",
@@ -9845,7 +9984,7 @@ function ServiceTab(_ref58) {
     var ma = function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused10) {
+      } catch (_unused12) {
         return "contact";
       }
     }();
@@ -9853,22 +9992,22 @@ function ServiceTab(_ref58) {
       sensitivity: "base"
     });
   });
-  var _useState173 = useState(false),
-    _useState174 = _slicedToArray(_useState173, 2),
-    showModal = _useState174[0],
-    setShowModal = _useState174[1];
-  var _useState175 = useState(null),
-    _useState176 = _slicedToArray(_useState175, 2),
-    confirmServiceDelete = _useState176[0],
-    setConfirmServiceDelete = _useState176[1];
-  var _useState177 = useState(null),
+  var _useState177 = useState(false),
     _useState178 = _slicedToArray(_useState177, 2),
-    editingId = _useState178[0],
-    setEditingId = _useState178[1];
-  var _useState179 = useState("all"),
+    showModal = _useState178[0],
+    setShowModal = _useState178[1];
+  var _useState179 = useState(null),
     _useState180 = _slicedToArray(_useState179, 2),
-    filter = _useState180[0],
-    setFilter = _useState180[1];
+    confirmServiceDelete = _useState180[0],
+    setConfirmServiceDelete = _useState180[1];
+  var _useState181 = useState(null),
+    _useState182 = _slicedToArray(_useState181, 2),
+    editingId = _useState182[0],
+    setEditingId = _useState182[1];
+  var _useState183 = useState("all"),
+    _useState184 = _slicedToArray(_useState183, 2),
+    filter = _useState184[0],
+    setFilter = _useState184[1];
   var emptyForm = function emptyForm() {
     var _enrolledClients$, _enrolledClients$2;
     return {
@@ -9883,10 +10022,10 @@ function ServiceTab(_ref58) {
       recurrence: ((_enrolledClients$2 = enrolledClients[0]) === null || _enrolledClients$2 === void 0 ? void 0 : _enrolledClients$2.recurrence) || "None"
     };
   };
-  var _useState181 = useState(emptyForm()),
-    _useState182 = _slicedToArray(_useState181, 2),
-    form = _useState182[0],
-    setForm = _useState182[1];
+  var _useState185 = useState(emptyForm()),
+    _useState186 = _slicedToArray(_useState185, 2),
+    form = _useState186[0],
+    setForm = _useState186[1];
   var openAdd = function openAdd() {
     setForm(emptyForm());
     setEditingId(null);
@@ -9977,7 +10116,7 @@ function ServiceTab(_ref58) {
     var ma = function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused11) {
+      } catch (_unused13) {
         return "contact";
       }
     }();
@@ -10058,10 +10197,10 @@ function ServiceTab(_ref58) {
       marginBottom: "20px",
       flexWrap: "wrap"
     }
-  }, [["all", "All"], ["complete", "Complete"], ["partial", "Partial"], ["pending", "Pending"]].map(function (_ref59) {
-    var _ref60 = _slicedToArray(_ref59, 2),
-      val = _ref60[0],
-      lbl = _ref60[1];
+  }, [["all", "All"], ["complete", "Complete"], ["partial", "Partial"], ["pending", "Pending"]].map(function (_ref61) {
+    var _ref62 = _slicedToArray(_ref61, 2),
+      val = _ref62[0],
+      lbl = _ref62[1];
     return /*#__PURE__*/React.createElement("button", {
       key: val,
       onClick: function onClick() {
@@ -10334,7 +10473,7 @@ function ServiceTab(_ref58) {
     var ma = function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused12) {
+      } catch (_unused14) {
         return "contact";
       }
     }();
@@ -10473,33 +10612,33 @@ function ServiceTab(_ref58) {
 }
 
 // ── OWNER PIN SCREEN ──────────────────────────────────────────────────────────
-function OwnerPinScreen(_ref61) {
-  var onSuccess = _ref61.onSuccess,
-    onCancel = _ref61.onCancel;
-  var _useState183 = useState(""),
-    _useState184 = _slicedToArray(_useState183, 2),
-    pin = _useState184[0],
-    setPin = _useState184[1];
-  var _useState185 = useState(""),
-    _useState186 = _slicedToArray(_useState185, 2),
-    confirm = _useState186[0],
-    setConfirm = _useState186[1];
-  var _useState187 = useState(null),
+function OwnerPinScreen(_ref63) {
+  var onSuccess = _ref63.onSuccess,
+    onCancel = _ref63.onCancel;
+  var _useState187 = useState(""),
     _useState188 = _slicedToArray(_useState187, 2),
-    existing = _useState188[0],
-    setExisting = _useState188[1];
+    pin = _useState188[0],
+    setPin = _useState188[1];
   var _useState189 = useState(""),
     _useState190 = _slicedToArray(_useState189, 2),
-    error = _useState190[0],
-    setError = _useState190[1];
-  var _useState191 = useState(true),
+    confirm = _useState190[0],
+    setConfirm = _useState190[1];
+  var _useState191 = useState(null),
     _useState192 = _slicedToArray(_useState191, 2),
-    loading = _useState192[0],
-    setLoading = _useState192[1];
-  var _useState193 = useState("enter"),
+    existing = _useState192[0],
+    setExisting = _useState192[1];
+  var _useState193 = useState(""),
     _useState194 = _slicedToArray(_useState193, 2),
-    mode = _useState194[0],
-    setMode = _useState194[1]; // enter | setup
+    error = _useState194[0],
+    setError = _useState194[1];
+  var _useState195 = useState(true),
+    _useState196 = _slicedToArray(_useState195, 2),
+    loading = _useState196[0],
+    setLoading = _useState196[1];
+  var _useState197 = useState("enter"),
+    _useState198 = _slicedToArray(_useState197, 2),
+    mode = _useState198[0],
+    setMode = _useState198[1]; // enter | setup
 
   useEffect(function () {
     loadShared(KEYS.ownerpin).then(function (p) {
@@ -10724,23 +10863,23 @@ function OwnerPinScreen(_ref61) {
 }
 
 // ── PAVER JOB CARD ────────────────────────────────────────────────────────────
-function PaverJobCard(_ref62) {
-  var job = _ref62.job,
-    onEdit = _ref62.onEdit,
-    onDelete = _ref62.onDelete,
-    accentColor = _ref62.accentColor,
-    _ref62$cfg = _ref62.cfg,
-    cfg = _ref62$cfg === void 0 ? HSC_SECTIONS.pavers : _ref62$cfg;
+function PaverJobCard(_ref64) {
+  var job = _ref64.job,
+    onEdit = _ref64.onEdit,
+    onDelete = _ref64.onDelete,
+    accentColor = _ref64.accentColor,
+    _ref64$cfg = _ref64.cfg,
+    cfg = _ref64$cfg === void 0 ? HSC_SECTIONS.pavers : _ref64$cfg;
   var L = hscLabels(cfg, job.jobType);
   var PHASES = hscPhases(cfg, job);
-  var _useState195 = useState(false),
-    _useState196 = _slicedToArray(_useState195, 2),
-    expanded = _useState196[0],
-    setExpanded = _useState196[1];
-  var _useState197 = useState(null),
-    _useState198 = _slicedToArray(_useState197, 2),
-    lightbox = _useState198[0],
-    setLightbox = _useState198[1];
+  var _useState199 = useState(false),
+    _useState200 = _slicedToArray(_useState199, 2),
+    expanded = _useState200[0],
+    setExpanded = _useState200[1];
+  var _useState201 = useState(null),
+    _useState202 = _slicedToArray(_useState201, 2),
+    lightbox = _useState202[0],
+    setLightbox = _useState202[1];
   var sc = STATUS_COLORS[job.status] || STATUS_COLORS["Quoted"];
   var phaseDone = PHASES.filter(function (p) {
     var _job$phases;
@@ -11201,12 +11340,12 @@ function PaverJobCard(_ref62) {
 }
 
 // ── PAVER JOB FORM ────────────────────────────────────────────────────────────
-function PaverJobForm(_ref63) {
-  var job = _ref63.job,
-    onSave = _ref63.onSave,
-    onClose = _ref63.onClose,
-    _ref63$cfg = _ref63.cfg,
-    cfg = _ref63$cfg === void 0 ? HSC_SECTIONS.pavers : _ref63$cfg;
+function PaverJobForm(_ref65) {
+  var job = _ref65.job,
+    onSave = _ref65.onSave,
+    onClose = _ref65.onClose,
+    _ref65$cfg = _ref65.cfg,
+    cfg = _ref65$cfg === void 0 ? HSC_SECTIONS.pavers : _ref65$cfg;
   var blank = function blank() {
     return {
       jobName: "",
@@ -11237,10 +11376,10 @@ function PaverJobForm(_ref63) {
       phases: {}
     };
   };
-  var _useState199 = useState(job ? _objectSpread(_objectSpread({}, blank()), job) : blank()),
-    _useState200 = _slicedToArray(_useState199, 2),
-    form = _useState200[0],
-    setForm = _useState200[1];
+  var _useState203 = useState(job ? _objectSpread(_objectSpread({}, blank()), job) : blank()),
+    _useState204 = _slicedToArray(_useState203, 2),
+    form = _useState204[0],
+    setForm = _useState204[1];
   var accent = {
     from: "var(--greenD)",
     to: "var(--green)"
@@ -11860,10 +11999,10 @@ function HardscapingClientsManager() {
     }
   }));
 }
-function HscClientForm(_ref64) {
-  var client = _ref64.client,
-    onSave = _ref64.onSave,
-    onClose = _ref64.onClose;
+function HscClientForm(_ref66) {
+  var client = _ref66.client,
+    onSave = _ref66.onSave,
+    onClose = _ref66.onClose;
   var _React$useState15 = React.useState(client ? {
       name: client.name || "",
       address: client.address || "",
@@ -11979,28 +12118,28 @@ var BLANK_LINE = function BLANK_LINE() {
   };
 };
 var EST_UNITS = ["SqFt", "LnFt", "FcFt", "CuYd", "Pcs", "Bg"];
-function EstimateGenerator(_ref65) {
-  var onBack = _ref65.onBack;
-  var _useState201 = useState([]),
-    _useState202 = _slicedToArray(_useState201, 2),
-    estimates = _useState202[0],
-    setEstimates = _useState202[1];
-  var _useState203 = useState("list"),
-    _useState204 = _slicedToArray(_useState203, 2),
-    view = _useState204[0],
-    setView = _useState204[1]; // "list" | "edit" | "preview"
-  var _useState205 = useState(null),
+function EstimateGenerator(_ref67) {
+  var onBack = _ref67.onBack;
+  var _useState205 = useState([]),
     _useState206 = _slicedToArray(_useState205, 2),
-    current = _useState206[0],
-    setCurrent = _useState206[1]; // estimate being edited
-  var _useState207 = useState(null),
+    estimates = _useState206[0],
+    setEstimates = _useState206[1];
+  var _useState207 = useState("list"),
     _useState208 = _slicedToArray(_useState207, 2),
-    confirmDel = _useState208[0],
-    setConfirmDel = _useState208[1];
-  var _useState209 = useState([]),
+    view = _useState208[0],
+    setView = _useState208[1]; // "list" | "edit" | "preview"
+  var _useState209 = useState(null),
     _useState210 = _slicedToArray(_useState209, 2),
-    hscClients = _useState210[0],
-    setHscClients = _useState210[1];
+    current = _useState210[0],
+    setCurrent = _useState210[1]; // estimate being edited
+  var _useState211 = useState(null),
+    _useState212 = _slicedToArray(_useState211, 2),
+    confirmDel = _useState212[0],
+    setConfirmDel = _useState212[1];
+  var _useState213 = useState([]),
+    _useState214 = _slicedToArray(_useState213, 2),
+    hscClients = _useState214[0],
+    setHscClients = _useState214[1];
   useEffect(function () {
     loadShared(KEYS.hscClients).then(function (d) {
       return setHscClients(d || []);
@@ -13031,7 +13170,7 @@ function EstimateGenerator(_ref65) {
         },
         value: current.status || "Draft",
         onChange: (/*#__PURE__*/function () {
-          var _ref66 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee29(e) {
+          var _ref68 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee29(e) {
             var updated, next;
             return _regenerator().w(function (_context29) {
               while (1) switch (_context29.n) {
@@ -13051,7 +13190,7 @@ function EstimateGenerator(_ref65) {
             }, _callee29);
           }));
           return function (_x23) {
-            return _ref66.apply(this, arguments);
+            return _ref68.apply(this, arguments);
           };
         }())
       }, ["Draft", "Sent", "Approved", "Declined"].map(function (s) {
@@ -13356,9 +13495,9 @@ function EstimateGenerator(_ref65) {
 }
 
 // ── HARDSCAPING PIPELINE VIEW ─────────────────────────────────────────────────
-function HscPipelineView(_ref67) {
-  var jobs = _ref67.jobs,
-    onEdit = _ref67.onEdit;
+function HscPipelineView(_ref69) {
+  var jobs = _ref69.jobs,
+    onEdit = _ref69.onEdit;
   var PIPELINE_COLS = [{
     key: "Quoted",
     label: "Quoted",
@@ -13581,45 +13720,45 @@ function HscPipelineView(_ref67) {
 }
 
 // ── PAVERS TAB ────────────────────────────────────────────────────────────────
-function HardscapeSection(_ref68) {
-  var cfg = _ref68.cfg,
-    onBack = _ref68.onBack;
-  var _useState211 = useState([]),
-    _useState212 = _slicedToArray(_useState211, 2),
-    jobs = _useState212[0],
-    setJobs = _useState212[1];
-  var _useState213 = useState(true),
-    _useState214 = _slicedToArray(_useState213, 2),
-    loading = _useState214[0],
-    setLoading = _useState214[1];
-  var _useState215 = useState(false),
+function HardscapeSection(_ref70) {
+  var cfg = _ref70.cfg,
+    onBack = _ref70.onBack;
+  var _useState215 = useState([]),
     _useState216 = _slicedToArray(_useState215, 2),
-    showForm = _useState216[0],
-    setShowForm = _useState216[1];
-  var _useState217 = useState(null),
+    jobs = _useState216[0],
+    setJobs = _useState216[1];
+  var _useState217 = useState(true),
     _useState218 = _slicedToArray(_useState217, 2),
-    editingJob = _useState218[0],
-    setEditingJob = _useState218[1];
-  var _useState219 = useState("All"),
+    loading = _useState218[0],
+    setLoading = _useState218[1];
+  var _useState219 = useState(false),
     _useState220 = _slicedToArray(_useState219, 2),
-    filter = _useState220[0],
-    setFilter = _useState220[1];
-  var _useState221 = useState("All"),
+    showForm = _useState220[0],
+    setShowForm = _useState220[1];
+  var _useState221 = useState(null),
     _useState222 = _slicedToArray(_useState221, 2),
-    typeFilter = _useState222[0],
-    setTypeFilter = _useState222[1];
-  var _useState223 = useState(""),
+    editingJob = _useState222[0],
+    setEditingJob = _useState222[1];
+  var _useState223 = useState("All"),
     _useState224 = _slicedToArray(_useState223, 2),
-    search = _useState224[0],
-    setSearch = _useState224[1];
-  var _useState225 = useState("jobs"),
+    filter = _useState224[0],
+    setFilter = _useState224[1];
+  var _useState225 = useState("All"),
     _useState226 = _slicedToArray(_useState225, 2),
-    section = _useState226[0],
-    setSection = _useState226[1]; // "jobs" | "estimates" | "clients" | "pipeline"
-  var _useState227 = useState(false),
+    typeFilter = _useState226[0],
+    setTypeFilter = _useState226[1];
+  var _useState227 = useState(""),
     _useState228 = _slicedToArray(_useState227, 2),
-    pipelineView = _useState228[0],
-    setPipelineView = _useState228[1];
+    search = _useState228[0],
+    setSearch = _useState228[1];
+  var _useState229 = useState("jobs"),
+    _useState230 = _slicedToArray(_useState229, 2),
+    section = _useState230[0],
+    setSection = _useState230[1]; // "jobs" | "estimates" | "clients" | "pipeline"
+  var _useState231 = useState(false),
+    _useState232 = _slicedToArray(_useState231, 2),
+    pipelineView = _useState232[0],
+    setPipelineView = _useState232[1];
   useEffect(function () {
     loadShared(cfg.storeKey).then(function (d) {
       setJobs(d || []);
@@ -14014,18 +14153,18 @@ function HardscapeSection(_ref68) {
   })));
 }
 function HardscapingHub() {
-  var _useState229 = useState(false),
-    _useState230 = _slicedToArray(_useState229, 2),
-    pinUnlocked = _useState230[0],
-    setPinUnlocked = _useState230[1];
-  var _useState231 = useState(false),
-    _useState232 = _slicedToArray(_useState231, 2),
-    showPin = _useState232[0],
-    setShowPin = _useState232[1];
-  var _useState233 = useState(null),
+  var _useState233 = useState(false),
     _useState234 = _slicedToArray(_useState233, 2),
-    sub = _useState234[0],
-    setSub = _useState234[1]; // null | "pavers" | "decksfence"
+    pinUnlocked = _useState234[0],
+    setPinUnlocked = _useState234[1];
+  var _useState235 = useState(false),
+    _useState236 = _slicedToArray(_useState235, 2),
+    showPin = _useState236[0],
+    setShowPin = _useState236[1];
+  var _useState237 = useState(null),
+    _useState238 = _slicedToArray(_useState237, 2),
+    sub = _useState238[0],
+    setSub = _useState238[1]; // null | "pavers" | "decksfence"
 
   if (!pinUnlocked) {
     return /*#__PURE__*/React.createElement("div", {
@@ -14194,13 +14333,13 @@ function HardscapingHub() {
 }
 
 // ── SCHEDULE TAB (Summer + Winter toggle) ─────────────────────────────────────
-function ScheduleTab(_ref69) {
-  var clients = _ref69.clients,
-    summerServices = _ref69.summerServices,
-    winterServices = _ref69.winterServices,
-    setSummerServices = _ref69.setSummerServices,
-    setWinterServices = _ref69.setWinterServices,
-    employee = _ref69.employee;
+function ScheduleTab(_ref71) {
+  var clients = _ref71.clients,
+    summerServices = _ref71.summerServices,
+    winterServices = _ref71.winterServices,
+    setSummerServices = _ref71.setSummerServices,
+    setWinterServices = _ref71.setWinterServices,
+    employee = _ref71.employee;
   var _React$useState17 = React.useState("summer"),
     _React$useState18 = _slicedToArray(_React$useState17, 2),
     season = _React$useState18[0],
@@ -14264,10 +14403,10 @@ function ScheduleTab(_ref69) {
 }
 
 // ── TIME PICKER COMPONENT (12-hour) ───────────────────────────────────────────
-function TimePicker(_ref70) {
-  var value = _ref70.value,
-    _onChange6 = _ref70.onChange,
-    label = _ref70.label;
+function TimePicker(_ref72) {
+  var value = _ref72.value,
+    _onChange6 = _ref72.onChange,
+    label = _ref72.label;
   var hours12 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   var minutes = ["00", "15", "30", "45"];
   // Parse stored 24h value → 12h display
@@ -14377,9 +14516,9 @@ function TimePicker(_ref70) {
 }
 
 // ── SHIFTS TAB ────────────────────────────────────────────────────────────────
-function ShiftsTab(_ref71) {
-  var employees = _ref71.employees,
-    employeeRole = _ref71.employeeRole;
+function ShiftsTab(_ref73) {
+  var employees = _ref73.employees,
+    employeeRole = _ref73.employeeRole;
   var _React$useState19 = React.useState([]),
     _React$useState20 = _slicedToArray(_React$useState19, 2),
     shifts = _React$useState20[0],
@@ -14898,66 +15037,66 @@ function ShiftsTab(_ref71) {
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
-  var _useState235 = useState(function () {
+  var _useState239 = useState(function () {
       try {
         return localStorage.getItem(KEYS.savedEmployee) ? "app" : "login";
-      } catch (_unused13) {
+      } catch (_unused15) {
         return "login";
       }
     }),
-    _useState236 = _slicedToArray(_useState235, 2),
-    screen = _useState236[0],
-    setScreen = _useState236[1];
-  var _useState237 = useState(function () {
-      try {
-        return localStorage.getItem(KEYS.savedEmployee) || null;
-      } catch (_unused14) {
-        return null;
-      }
-    }),
-    _useState238 = _slicedToArray(_useState237, 2),
-    employee = _useState238[0],
-    setEmployee = _useState238[1];
-  var _useState239 = useState(function () {
-      try {
-        return localStorage.getItem(KEYS.savedRole) || "all";
-      } catch (_unused15) {
-        return "all";
-      }
-    }),
     _useState240 = _slicedToArray(_useState239, 2),
-    employeeRole = _useState240[0],
-    setEmployeeRole = _useState240[1];
+    screen = _useState240[0],
+    setScreen = _useState240[1];
   var _useState241 = useState(function () {
       try {
-        return localStorage.getItem("pps-isowner") === "true";
+        return localStorage.getItem(KEYS.savedEmployee) || null;
       } catch (_unused16) {
-        return false;
+        return null;
       }
     }),
     _useState242 = _slicedToArray(_useState241, 2),
-    isOwner = _useState242[0],
-    setIsOwner = _useState242[1];
-  EMP_VIEW = !isOwner;
-  var _useState243 = useState("clients"),
+    employee = _useState242[0],
+    setEmployee = _useState242[1];
+  var _useState243 = useState(function () {
+      try {
+        return localStorage.getItem(KEYS.savedRole) || "all";
+      } catch (_unused17) {
+        return "all";
+      }
+    }),
     _useState244 = _slicedToArray(_useState243, 2),
-    tab = _useState244[0],
-    setTab = _useState244[1];
+    employeeRole = _useState244[0],
+    setEmployeeRole = _useState244[1];
   var _useState245 = useState(function () {
       try {
-        return localStorage.getItem("pps-division") || null;
-      } catch (_unused17) {
-        return null;
+        return localStorage.getItem("pps-isowner") === "true";
+      } catch (_unused18) {
+        return false;
       }
     }),
     _useState246 = _slicedToArray(_useState245, 2),
-    division = _useState246[0],
-    setDivision = _useState246[1];
+    isOwner = _useState246[0],
+    setIsOwner = _useState246[1];
+  EMP_VIEW = !isOwner;
+  var _useState247 = useState("clients"),
+    _useState248 = _slicedToArray(_useState247, 2),
+    tab = _useState248[0],
+    setTab = _useState248[1];
+  var _useState249 = useState(function () {
+      try {
+        return localStorage.getItem("pps-division") || null;
+      } catch (_unused19) {
+        return null;
+      }
+    }),
+    _useState250 = _slicedToArray(_useState249, 2),
+    division = _useState250[0],
+    setDivision = _useState250[1];
   var setDiv = function setDiv(d) {
     setDivision(d);
     try {
       localStorage.setItem("pps-division", d || "");
-    } catch (_unused18) {}
+    } catch (_unused20) {}
     if (d) {
       history.pushState({
         nav: "division",
@@ -14965,30 +15104,30 @@ function App() {
       }, "");
     }
   };
-  var _useState247 = useState(false),
-    _useState248 = _slicedToArray(_useState247, 2),
-    showAddClient = _useState248[0],
-    setShowAddClient = _useState248[1];
-  var _useState249 = useState(false),
-    _useState250 = _slicedToArray(_useState249, 2),
-    showAdmin = _useState250[0],
-    setShowAdmin = _useState250[1];
   var _useState251 = useState(false),
     _useState252 = _slicedToArray(_useState251, 2),
-    showEmployeeReport = _useState252[0],
-    setShowEmployeeReport = _useState252[1];
-  var _useState253 = useState(null),
+    showAddClient = _useState252[0],
+    setShowAddClient = _useState252[1];
+  var _useState253 = useState(false),
     _useState254 = _slicedToArray(_useState253, 2),
-    backupConfirm = _useState254[0],
-    setBackupConfirm = _useState254[1]; // null | 'export' | 'import'
-  var _useState255 = useState(null),
+    showAdmin = _useState254[0],
+    setShowAdmin = _useState254[1];
+  var _useState255 = useState(false),
     _useState256 = _slicedToArray(_useState255, 2),
-    pendingImportFile = _useState256[0],
-    setPendingImportFile = _useState256[1];
+    showEmployeeReport = _useState256[0],
+    setShowEmployeeReport = _useState256[1];
   var _useState257 = useState(null),
     _useState258 = _slicedToArray(_useState257, 2),
-    adminSection = _useState258[0],
-    setAdminSection = _useState258[1]; // null | "report" | "rollover" | "employees"
+    backupConfirm = _useState258[0],
+    setBackupConfirm = _useState258[1]; // null | 'export' | 'import'
+  var _useState259 = useState(null),
+    _useState260 = _slicedToArray(_useState259, 2),
+    pendingImportFile = _useState260[0],
+    setPendingImportFile = _useState260[1];
+  var _useState261 = useState(null),
+    _useState262 = _slicedToArray(_useState261, 2),
+    adminSection = _useState262[0],
+    setAdminSection = _useState262[1]; // null | "report" | "rollover" | "employees"
 
   // Handle Android/browser back button
   useEffect(function () {
@@ -15012,7 +15151,7 @@ function App() {
         setDivision(null);
         try {
           localStorage.setItem("pps-division", "");
-        } catch (_unused19) {}
+        } catch (_unused21) {}
         return;
       }
     };
@@ -15042,52 +15181,52 @@ function App() {
       return setAllEmployeesForShifts(d || []);
     });
   }, []);
-  var _useState259 = useState(false),
-    _useState260 = _slicedToArray(_useState259, 2),
-    loading = _useState260[0],
-    setLoading = _useState260[1];
-  var _useState261 = useState(null),
-    _useState262 = _slicedToArray(_useState261, 2),
-    lastSync = _useState262[0],
-    setLastSync = _useState262[1];
   var _useState263 = useState(false),
     _useState264 = _slicedToArray(_useState263, 2),
-    syncing = _useState264[0],
-    setSyncing = _useState264[1];
-  var _useState265 = useState([]),
+    loading = _useState264[0],
+    setLoading = _useState264[1];
+  var _useState265 = useState(null),
     _useState266 = _slicedToArray(_useState265, 2),
-    clients = _useState266[0],
-    setClients = _useState266[1];
-  var _useState267 = useState([]),
+    lastSync = _useState266[0],
+    setLastSync = _useState266[1];
+  var _useState267 = useState(false),
     _useState268 = _slicedToArray(_useState267, 2),
-    summerServices = _useState268[0],
-    setSummerServices = _useState268[1];
+    syncing = _useState268[0],
+    setSyncing = _useState268[1];
   var _useState269 = useState([]),
     _useState270 = _slicedToArray(_useState269, 2),
-    winterServices = _useState270[0],
-    setWinterServices = _useState270[1];
+    clients = _useState270[0],
+    setClients = _useState270[1];
   var _useState271 = useState([]),
     _useState272 = _slicedToArray(_useState271, 2),
-    paverJobs = _useState272[0],
-    setPaverJobs = _useState272[1];
-  var _useState273 = useState({}),
+    summerServices = _useState272[0],
+    setSummerServices = _useState272[1];
+  var _useState273 = useState([]),
     _useState274 = _slicedToArray(_useState273, 2),
-    carries = _useState274[0],
-    setCarriesShared = _useState274[1];
-  var _useState275 = useState({}),
+    winterServices = _useState274[0],
+    setWinterServices = _useState274[1];
+  var _useState275 = useState([]),
     _useState276 = _slicedToArray(_useState275, 2),
-    snowDays = _useState276[0],
-    setSnowDaysShared = _useState276[1];
-  var _useState277 = useState(function () {
+    paverJobs = _useState276[0],
+    setPaverJobs = _useState276[1];
+  var _useState277 = useState({}),
+    _useState278 = _slicedToArray(_useState277, 2),
+    carries = _useState278[0],
+    setCarriesShared = _useState278[1];
+  var _useState279 = useState({}),
+    _useState280 = _slicedToArray(_useState279, 2),
+    snowDays = _useState280[0],
+    setSnowDaysShared = _useState280[1];
+  var _useState281 = useState(function () {
       try {
         return localStorage.getItem(KEYS.displayMode) || "contact";
-      } catch (_unused20) {
+      } catch (_unused22) {
         return "contact";
       }
     }),
-    _useState278 = _slicedToArray(_useState277, 2),
-    displayMode = _useState278[0],
-    setDisplayMode = _useState278[1];
+    _useState282 = _slicedToArray(_useState281, 2),
+    displayMode = _useState282[0],
+    setDisplayMode = _useState282[1];
   var syncData = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee35() {
     var quiet,
       _yield$Promise$all,
@@ -15171,7 +15310,7 @@ function App() {
         localStorage.setItem(KEYS.savedRole, role || "all");
         localStorage.setItem("pps-isowner", owner ? "true" : "false");
         localStorage.setItem("pps-division", "");
-      } catch (_unused21) {}
+      } catch (_unused23) {}
       setScreen("app");
     }
   });
@@ -15358,7 +15497,7 @@ function App() {
         localStorage.removeItem(KEYS.savedEmployee);
         localStorage.removeItem(KEYS.savedRole);
         localStorage.removeItem("pps-isowner");
-      } catch (_unused22) {}
+      } catch (_unused24) {}
       setScreen("login");
     },
     title: "Sign out",
@@ -15775,7 +15914,7 @@ function App() {
           if (k && k.startsWith("pps-")) {
             try {
               out[k] = JSON.parse(localStorage.getItem(k));
-            } catch (_unused23) {
+            } catch (_unused25) {
               out[k] = localStorage.getItem(k);
             }
           }
