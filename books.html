@@ -782,53 +782,314 @@ var sbH = function sbH() {
     Authorization: "Bearer ".concat(SUPABASE_ANON_KEY)
   };
 };
-function loadShared(_x) {
-  return _loadShared.apply(this, arguments);
+
+// ── Sign-in. "server" = the database sign-in is installed (data is locked behind it); "legacy" = the old open access, used until that step is run. ──
+var AUTH = {
+  token: null,
+  role: null,
+  mode: null
+};
+try {
+  var a = JSON.parse(sessionStorage.getItem("pvb-auth") || "null");
+  if (a && a.token) {
+    AUTH.token = a.token;
+    AUTH.role = a.role;
+  }
+} catch (_unused) {}
+var authStore = function authStore() {
+  try {
+    if (AUTH.token) sessionStorage.setItem("pvb-auth", JSON.stringify({
+      token: AUTH.token,
+      role: AUTH.role
+    }));else sessionStorage.removeItem("pvb-auth");
+  } catch (_unused2) {}
+};
+function rpc(_x, _x2, _x3) {
+  return _rpc.apply(this, arguments);
 }
-function _loadShared() {
-  _loadShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14(key) {
-    var r, rows, _t4;
-    return _regenerator().w(function (_context15) {
-      while (1) switch (_context15.p = _context15.n) {
-        case 0:
-          _context15.p = 0;
-          _context15.n = 1;
-          return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data?key=eq.").concat(encodeURIComponent(key), "&select=value"), {
-            headers: sbH()
-          });
-        case 1:
-          r = _context15.v;
-          if (r.ok) {
-            _context15.n = 2;
-            break;
-          }
-          return _context15.a(2, null);
-        case 2:
-          _context15.n = 3;
-          return r.json();
-        case 3:
-          rows = _context15.v;
-          return _context15.a(2, rows.length ? rows[0].value : null);
-        case 4:
-          _context15.p = 4;
-          _t4 = _context15.v;
-          return _context15.a(2, null);
-      }
-    }, _callee14, null, [[0, 4]]);
-  }));
-  return _loadShared.apply(this, arguments);
-}
-function saveShared(_x2, _x3) {
-  return _saveShared.apply(this, arguments);
-} // ── Automatic session backups: 31 rotating daily slots (the last session of each day wins) ──
-function _saveShared() {
-  _saveShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee15(key, value) {
-    var r, _t5;
+function _rpc() {
+  _rpc = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee15(fn, args, keepalive) {
+    var r, body, msg, _t6, _t7;
     return _regenerator().w(function (_context16) {
       while (1) switch (_context16.p = _context16.n) {
         case 0:
           _context16.p = 0;
           _context16.n = 1;
+          return fetch("".concat(SUPABASE_URL, "/rest/v1/rpc/").concat(fn), {
+            method: "POST",
+            keepalive: !!keepalive,
+            headers: sbH(),
+            body: JSON.stringify(args || {})
+          });
+        case 1:
+          r = _context16.v;
+          body = null;
+          _context16.p = 2;
+          _context16.n = 3;
+          return r.json();
+        case 3:
+          body = _context16.v;
+          _context16.n = 5;
+          break;
+        case 4:
+          _context16.p = 4;
+          _t6 = _context16.v;
+        case 5:
+          if (!r.ok) {
+            _context16.n = 6;
+            break;
+          }
+          return _context16.a(2, {
+            ok: true,
+            data: body
+          });
+        case 6:
+          msg = body && body.message || "";
+          return _context16.a(2, {
+            ok: false,
+            missing: r.status === 404 || body && body.code === "PGRST202",
+            unauthorized: msg === "unauthorized",
+            network: false
+          });
+        case 7:
+          _context16.p = 7;
+          _t7 = _context16.v;
+          return _context16.a(2, {
+            ok: false,
+            network: true
+          });
+      }
+    }, _callee15, null, [[2, 4], [0, 7]]);
+  }));
+  return _rpc.apply(this, arguments);
+}
+function authExpire() {
+  AUTH.token = null;
+  AUTH.role = null;
+  authStore();
+  try {
+    window.dispatchEvent(new Event("pvb-auth-expired"));
+  } catch (_unused3) {}
+}
+var _modeP = null;
+function authMode() {
+  if (AUTH.mode) return Promise.resolve(AUTH.mode);
+  if (!_modeP) _modeP = rpc("app_owner_pin_set").then(function (r) {
+    _modeP = null;
+    if (r.ok) AUTH.mode = "server";else if (r.missing) AUTH.mode = "legacy";
+    return AUTH.mode;
+  });
+  return _modeP;
+}
+function authNeedsLogin() {
+  return _authNeedsLogin.apply(this, arguments);
+}
+function _authNeedsLogin() {
+  _authNeedsLogin = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16() {
+    var _t8, _t9;
+    return _regenerator().w(function (_context17) {
+      while (1) switch (_context17.n) {
+        case 0:
+          _context17.n = 1;
+          return authMode();
+        case 1:
+          _t9 = _context17.v;
+          _t8 = _t9 === "server";
+          if (!_t8) {
+            _context17.n = 2;
+            break;
+          }
+          _t8 = !AUTH.token;
+        case 2:
+          return _context17.a(2, _t8);
+      }
+    }, _callee16);
+  }));
+  return _authNeedsLogin.apply(this, arguments);
+}
+function authOwnerPinSet() {
+  return _authOwnerPinSet.apply(this, arguments);
+}
+function _authOwnerPinSet() {
+  _authOwnerPinSet = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee17() {
+    var r;
+    return _regenerator().w(function (_context18) {
+      while (1) switch (_context18.n) {
+        case 0:
+          _context18.n = 1;
+          return rpc("app_owner_pin_set");
+        case 1:
+          r = _context18.v;
+          return _context18.a(2, r.ok ? !!r.data : true);
+      }
+    }, _callee17);
+  }));
+  return _authOwnerPinSet.apply(this, arguments);
+}
+function authLogin(_x4, _x5) {
+  return _authLogin.apply(this, arguments);
+}
+function _authLogin() {
+  _authLogin = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee18(who, pin) {
+    var r;
+    return _regenerator().w(function (_context19) {
+      while (1) switch (_context19.n) {
+        case 0:
+          _context19.n = 1;
+          return rpc("app_login", {
+            p_name: who,
+            p_pin: pin
+          });
+        case 1:
+          r = _context19.v;
+          if (r.ok) {
+            _context19.n = 2;
+            break;
+          }
+          return _context19.a(2, {
+            ok: false,
+            error: r.network ? "network" : "bad_pin"
+          });
+        case 2:
+          if (r.data && r.data.ok) {
+            AUTH.token = r.data.token;
+            AUTH.role = r.data.role;
+            authStore();
+          }
+          return _context19.a(2, r.data);
+      }
+    }, _callee18);
+  }));
+  return _authLogin.apply(this, arguments);
+}
+function authSetupOwner(_x6) {
+  return _authSetupOwner.apply(this, arguments);
+}
+function _authSetupOwner() {
+  _authSetupOwner = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee19(pin) {
+    var r;
+    return _regenerator().w(function (_context20) {
+      while (1) switch (_context20.n) {
+        case 0:
+          _context20.n = 1;
+          return rpc("app_setup_owner", {
+            p_pin: pin
+          });
+        case 1:
+          r = _context20.v;
+          if (r.ok && r.data && r.data.ok) {
+            AUTH.token = r.data.token;
+            AUTH.role = r.data.role;
+            authStore();
+          }
+          return _context20.a(2, r.ok ? r.data : {
+            ok: false,
+            error: "network"
+          });
+      }
+    }, _callee19);
+  }));
+  return _authSetupOwner.apply(this, arguments);
+}
+function authLogout() {
+  var t = AUTH.token;
+  AUTH.token = null;
+  AUTH.role = null;
+  authStore();
+  if (t) rpc("app_logout", {
+    p_token: t
+  });
+}
+function loadShared(_x7) {
+  return _loadShared.apply(this, arguments);
+}
+function _loadShared() {
+  _loadShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee20(key) {
+    var _r2, r, rows, _t0, _t1;
+    return _regenerator().w(function (_context21) {
+      while (1) switch (_context21.p = _context21.n) {
+        case 0:
+          _context21.p = 0;
+          _context21.n = 1;
+          return authMode();
+        case 1:
+          _t0 = _context21.v;
+          if (!(_t0 === "server")) {
+            _context21.n = 4;
+            break;
+          }
+          _context21.n = 2;
+          return rpc("app_get", {
+            p_token: AUTH.token,
+            p_key: key
+          });
+        case 2:
+          _r2 = _context21.v;
+          if (!_r2.unauthorized) {
+            _context21.n = 3;
+            break;
+          }
+          authExpire();
+          return _context21.a(2, null);
+        case 3:
+          return _context21.a(2, _r2.ok ? _r2.data : null);
+        case 4:
+          _context21.n = 5;
+          return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data?key=eq.").concat(encodeURIComponent(key), "&select=value"), {
+            headers: sbH()
+          });
+        case 5:
+          r = _context21.v;
+          if (r.ok) {
+            _context21.n = 6;
+            break;
+          }
+          return _context21.a(2, null);
+        case 6:
+          _context21.n = 7;
+          return r.json();
+        case 7:
+          rows = _context21.v;
+          return _context21.a(2, rows.length ? rows[0].value : null);
+        case 8:
+          _context21.p = 8;
+          _t1 = _context21.v;
+          return _context21.a(2, null);
+      }
+    }, _callee20, null, [[0, 8]]);
+  }));
+  return _loadShared.apply(this, arguments);
+}
+function saveShared(_x8, _x9) {
+  return _saveShared.apply(this, arguments);
+} // ── Automatic session backups: 31 rotating daily slots (the last session of each day wins) ──
+function _saveShared() {
+  _saveShared = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee21(key, value) {
+    var _r3, r, _t10, _t11;
+    return _regenerator().w(function (_context22) {
+      while (1) switch (_context22.p = _context22.n) {
+        case 0:
+          _context22.p = 0;
+          _context22.n = 1;
+          return authMode();
+        case 1:
+          _t10 = _context22.v;
+          if (!(_t10 === "server")) {
+            _context22.n = 3;
+            break;
+          }
+          _context22.n = 2;
+          return rpc("app_set", {
+            p_token: AUTH.token,
+            p_key: key,
+            p_value: value
+          });
+        case 2:
+          _r3 = _context22.v;
+          if (_r3.unauthorized) authExpire();
+          return _context22.a(2, _r3.ok);
+        case 3:
+          _context22.n = 4;
           return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data"), {
             method: "POST",
             headers: _objectSpread(_objectSpread({}, sbH()), {}, {
@@ -840,31 +1101,32 @@ function _saveShared() {
               updated_at: new Date().toISOString()
             })
           });
-        case 1:
-          r = _context16.v;
-          return _context16.a(2, r.ok);
-        case 2:
-          _context16.p = 2;
-          _t5 = _context16.v;
-          return _context16.a(2, false);
+        case 4:
+          r = _context22.v;
+          return _context22.a(2, r.ok);
+        case 5:
+          _context22.p = 5;
+          _t11 = _context22.v;
+          return _context22.a(2, false);
       }
-    }, _callee15, null, [[0, 2]]);
+    }, _callee21, null, [[0, 5]]);
   }));
   return _saveShared.apply(this, arguments);
 }
 var backupKey = function backupKey(d) {
   return "pvb-backup-d" + String(d.getDate()).padStart(2, "0");
 };
-function writeBackup(_x4, _x5) {
+function writeBackup(_x0, _x1) {
   return _writeBackup.apply(this, arguments);
 }
 function _writeBackup() {
-  _writeBackup = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee16(data, key) {
-    var snap, body, r, _t6;
-    return _regenerator().w(function (_context17) {
-      while (1) switch (_context17.p = _context17.n) {
+  _writeBackup = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee22(data, key) {
+    var tok, snap, _r4, body, r, _t12, _t13;
+    return _regenerator().w(function (_context23) {
+      while (1) switch (_context23.p = _context23.n) {
         case 0:
-          _context17.p = 0;
+          tok = AUTH.token; // captured now so signing out right after still lets the backup go through
+          _context23.p = 1;
           snap = {
             at: new Date().toISOString(),
             counts: {
@@ -885,12 +1147,31 @@ function _writeBackup() {
               settings: data.settings
             }
           };
+          _context23.n = 2;
+          return authMode();
+        case 2:
+          _t12 = _context23.v;
+          if (!(_t12 === "server")) {
+            _context23.n = 4;
+            break;
+          }
+          _context23.n = 3;
+          return rpc("app_set", {
+            p_token: tok,
+            p_key: key || backupKey(new Date()),
+            p_value: snap
+          }, JSON.stringify(snap).length < 60000);
+        case 3:
+          _r4 = _context23.v;
+          if (_r4.unauthorized) authExpire();
+          return _context23.a(2, _r4.ok);
+        case 4:
           body = JSON.stringify({
             key: key || backupKey(new Date()),
             value: snap,
             updated_at: snap.at
           });
-          _context17.n = 1;
+          _context23.n = 5;
           return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data"), {
             method: "POST",
             keepalive: body.length < 60000,
@@ -899,15 +1180,15 @@ function _writeBackup() {
             }),
             body: body
           });
-        case 1:
-          r = _context17.v;
-          return _context17.a(2, r.ok);
-        case 2:
-          _context17.p = 2;
-          _t6 = _context17.v;
-          return _context17.a(2, false);
+        case 5:
+          r = _context23.v;
+          return _context23.a(2, r.ok);
+        case 6:
+          _context23.p = 6;
+          _t13 = _context23.v;
+          return _context23.a(2, false);
       }
-    }, _callee16, null, [[0, 2]]);
+    }, _callee22, null, [[1, 6]]);
   }));
   return _writeBackup.apply(this, arguments);
 }
@@ -915,59 +1196,78 @@ function listBackups() {
   return _listBackups.apply(this, arguments);
 }
 function _listBackups() {
-  _listBackups = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee17() {
-    var r, _t7, _t8;
-    return _regenerator().w(function (_context18) {
-      while (1) switch (_context18.p = _context18.n) {
+  _listBackups = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee23() {
+    var _r5, r, _t14, _t15, _t16;
+    return _regenerator().w(function (_context24) {
+      while (1) switch (_context24.p = _context24.n) {
         case 0:
-          _context18.p = 0;
-          _context18.n = 1;
+          _context24.p = 0;
+          _context24.n = 1;
+          return authMode();
+        case 1:
+          _t14 = _context24.v;
+          if (!(_t14 === "server")) {
+            _context24.n = 3;
+            break;
+          }
+          _context24.n = 2;
+          return rpc("app_list", {
+            p_token: AUTH.token,
+            p_prefix: "pvb-backup-",
+            p_mode: "counts"
+          });
+        case 2:
+          _r5 = _context24.v;
+          if (_r5.unauthorized) authExpire();
+          return _context24.a(2, _r5.ok ? _r5.data || [] : []);
+        case 3:
+          _context24.n = 4;
           return fetch("".concat(SUPABASE_URL, "/rest/v1/app_data?key=like.pvb-backup-*&select=key,updated_at,counts:value->counts&order=updated_at.desc"), {
             headers: sbH()
           });
-        case 1:
-          r = _context18.v;
+        case 4:
+          r = _context24.v;
           if (!r.ok) {
-            _context18.n = 3;
+            _context24.n = 6;
             break;
           }
-          _context18.n = 2;
+          _context24.n = 5;
           return r.json();
-        case 2:
-          _t7 = _context18.v;
-          _context18.n = 4;
-          break;
-        case 3:
-          _t7 = [];
-        case 4:
-          return _context18.a(2, _t7);
         case 5:
-          _context18.p = 5;
-          _t8 = _context18.v;
-          return _context18.a(2, []);
+          _t15 = _context24.v;
+          _context24.n = 7;
+          break;
+        case 6:
+          _t15 = [];
+        case 7:
+          return _context24.a(2, _t15);
+        case 8:
+          _context24.p = 8;
+          _t16 = _context24.v;
+          return _context24.a(2, []);
       }
-    }, _callee17, null, [[0, 5]]);
+    }, _callee23, null, [[0, 8]]);
   }));
   return _listBackups.apply(this, arguments);
 }
-function uploadReceipt(_x6, _x7) {
+function uploadReceipt(_x10, _x11) {
   return _uploadReceipt.apply(this, arguments);
 }
 function _uploadReceipt() {
-  _uploadReceipt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee18(dataUrl, filename) {
-    var blob, r, _t9;
-    return _regenerator().w(function (_context19) {
-      while (1) switch (_context19.p = _context19.n) {
+  _uploadReceipt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee24(dataUrl, filename) {
+    var blob, r, _t17;
+    return _regenerator().w(function (_context25) {
+      while (1) switch (_context25.p = _context25.n) {
         case 0:
-          _context19.p = 0;
-          _context19.n = 1;
+          _context25.p = 0;
+          _context25.n = 1;
           return fetch(dataUrl);
         case 1:
-          _context19.n = 2;
-          return _context19.v.blob();
+          _context25.n = 2;
+          return _context25.v.blob();
         case 2:
-          blob = _context19.v;
-          _context19.n = 3;
+          blob = _context25.v;
+          _context25.n = 3;
           return fetch("".concat(SUPABASE_URL, "/storage/v1/object/photos/").concat(filename), {
             method: "POST",
             headers: {
@@ -978,20 +1278,20 @@ function _uploadReceipt() {
             body: blob
           });
         case 3:
-          r = _context19.v;
+          r = _context25.v;
           if (r.ok) {
-            _context19.n = 4;
+            _context25.n = 4;
             break;
           }
-          return _context19.a(2, null);
+          return _context25.a(2, null);
         case 4:
-          return _context19.a(2, "".concat(SUPABASE_URL, "/storage/v1/object/public/photos/").concat(filename));
+          return _context25.a(2, "".concat(SUPABASE_URL, "/storage/v1/object/public/photos/").concat(filename));
         case 5:
-          _context19.p = 5;
-          _t9 = _context19.v;
-          return _context19.a(2, null);
+          _context25.p = 5;
+          _t17 = _context25.v;
+          return _context25.a(2, null);
       }
-    }, _callee18, null, [[0, 5]]);
+    }, _callee24, null, [[0, 5]]);
   }));
   return _uploadReceipt.apply(this, arguments);
 }
@@ -1142,30 +1442,30 @@ function renderImg(img, box, max, q) {
   return c.toDataURL("image/jpeg", q);
 }
 // Returns { orig, crop } — crop is null when no receipt edges could be found confidently.
-function prepareReceipt(_x8) {
+function prepareReceipt(_x12) {
   return _prepareReceipt.apply(this, arguments);
 }
 function _prepareReceipt() {
-  _prepareReceipt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee19(file) {
+  _prepareReceipt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee25(file) {
     var max,
       q,
       img,
       box,
-      _args20 = arguments;
-    return _regenerator().w(function (_context20) {
-      while (1) switch (_context20.n) {
+      _args26 = arguments;
+    return _regenerator().w(function (_context26) {
+      while (1) switch (_context26.n) {
         case 0:
-          max = _args20.length > 1 && _args20[1] !== undefined ? _args20[1] : 1600;
-          q = _args20.length > 2 && _args20[2] !== undefined ? _args20[2] : 0.78;
-          _context20.n = 1;
+          max = _args26.length > 1 && _args26[1] !== undefined ? _args26[1] : 1600;
+          q = _args26.length > 2 && _args26[2] !== undefined ? _args26[2] : 0.78;
+          _context26.n = 1;
           return loadImg(file);
         case 1:
-          img = _context20.v;
+          img = _context26.v;
           if (img) {
-            _context20.n = 2;
+            _context26.n = 2;
             break;
           }
-          return _context20.a(2, null);
+          return _context26.a(2, null);
         case 2:
           box = null;
           try {
@@ -1173,12 +1473,12 @@ function _prepareReceipt() {
           } catch (e) {
             box = null;
           }
-          return _context20.a(2, {
+          return _context26.a(2, {
             orig: renderImg(img, null, max, q),
             crop: box ? renderImg(img, box, max, q) : null
           });
       }
-    }, _callee19);
+    }, _callee25);
   }));
   return _prepareReceipt.apply(this, arguments);
 }
@@ -1289,21 +1589,21 @@ var billToLines = function billToLines(c) {
 function getPin() {
   try {
     return sessionStorage.getItem("pvb-pin") || "";
-  } catch (_unused) {
+  } catch (_unused4) {
     return "";
   }
 }
-function sendEmail(_x9) {
+function sendEmail(_x13) {
   return _sendEmail.apply(this, arguments);
 }
 function _sendEmail() {
-  _sendEmail = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee20(payload) {
-    var r, j, _t0, _t1;
-    return _regenerator().w(function (_context21) {
-      while (1) switch (_context21.p = _context21.n) {
+  _sendEmail = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee26(payload) {
+    var r, j, _t18, _t19;
+    return _regenerator().w(function (_context27) {
+      while (1) switch (_context27.p = _context27.n) {
         case 0:
-          _context21.p = 0;
-          _context21.n = 1;
+          _context27.p = 0;
+          _context27.n = 1;
           return fetch("".concat(SUPABASE_URL, "/functions/v1/send-invoice"), {
             method: "POST",
             headers: sbH(),
@@ -1312,60 +1612,60 @@ function _sendEmail() {
             }, payload))
           });
         case 1:
-          r = _context21.v;
+          r = _context27.v;
           j = {};
-          _context21.p = 2;
-          _context21.n = 3;
+          _context27.p = 2;
+          _context27.n = 3;
           return r.json();
         case 3:
-          j = _context21.v;
-          _context21.n = 5;
+          j = _context27.v;
+          _context27.n = 5;
           break;
         case 4:
-          _context21.p = 4;
-          _t0 = _context21.v;
+          _context27.p = 4;
+          _t18 = _context27.v;
         case 5:
           if (!(r.status === 404)) {
-            _context21.n = 6;
+            _context27.n = 6;
             break;
           }
-          return _context21.a(2, {
+          return _context27.a(2, {
             ok: false,
             notSetUp: true,
             error: "Email sending isn't set up yet."
           });
         case 6:
           if (!(r.status === 401)) {
-            _context21.n = 7;
+            _context27.n = 7;
             break;
           }
-          return _context21.a(2, {
+          return _context27.a(2, {
             ok: false,
             error: "PIN not accepted. Lock and unlock the app again."
           });
         case 7:
           if (!(!r.ok || !j.ok)) {
-            _context21.n = 8;
+            _context27.n = 8;
             break;
           }
-          return _context21.a(2, {
+          return _context27.a(2, {
             ok: false,
             notSetUp: j.error === "not_configured",
             error: j.error === "not_configured" ? "Email sending isn't finished being set up (missing Gmail secrets)." : j.error || "Could not send (".concat(r.status, ").")
           });
         case 8:
-          return _context21.a(2, {
+          return _context27.a(2, {
             ok: true
           });
         case 9:
-          _context21.p = 9;
-          _t1 = _context21.v;
-          return _context21.a(2, {
+          _context27.p = 9;
+          _t19 = _context27.v;
+          return _context27.a(2, {
             ok: false,
             error: "Could not reach the email service. Check your connection."
           });
       }
-    }, _callee20, null, [[2, 4], [0, 9]]);
+    }, _callee26, null, [[2, 4], [0, 9]]);
   }));
   return _sendEmail.apply(this, arguments);
 }
@@ -1443,7 +1743,7 @@ function makeInvoicePdf(_ref2) {
   };
   try {
     doc.addImage(LOGO_URL, "PNG", M, 44, 80 * 319 / 360 * 1.0, 80);
-  } catch (_unused2) {}
+  } catch (_unused5) {}
   var addr = [s.businessName, s.phone].concat(_toConsumableArray(String(s.address || "").split("\n")), [s.email]);
   lines(addr, R, 62, {
     align: "right"
@@ -2193,60 +2493,150 @@ function Lock(_ref15) {
     _useState4 = _slicedToArray(_useState3, 2),
     acct = _useState4[0],
     setAcct = _useState4[1];
-  var _useState5 = useState(""),
+  var _useState5 = useState(false),
     _useState6 = _slicedToArray(_useState5, 2),
-    pin = _useState6[0],
-    setPin = _useState6[1];
-  var _useState7 = useState(""),
+    server = _useState6[0],
+    setServer = _useState6[1];
+  var _useState7 = useState(false),
     _useState8 = _slicedToArray(_useState7, 2),
-    pin2 = _useState8[0],
-    setPin2 = _useState8[1];
+    asAcct = _useState8[0],
+    setAsAcct = _useState8[1];
   var _useState9 = useState(""),
     _useState0 = _slicedToArray(_useState9, 2),
-    err = _useState0[0],
-    setErr = _useState0[1];
+    pin = _useState0[0],
+    setPin = _useState0[1];
+  var _useState1 = useState(""),
+    _useState10 = _slicedToArray(_useState1, 2),
+    pin2 = _useState10[0],
+    setPin2 = _useState10[1];
+  var _useState11 = useState(""),
+    _useState12 = _slicedToArray(_useState11, 2),
+    err = _useState12[0],
+    setErr = _useState12[1];
   useEffect(function () {
-    loadShared(K.ownerpin).then(function (v) {
-      return setStored(v || null);
-    });
-    loadShared(K.settings).then(function (v) {
-      return setAcct(v && v.accountantPin || "");
-    });
+    authMode().then(/*#__PURE__*/function () {
+      var _ref16 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(m) {
+        var _t, _t2;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.n) {
+            case 0:
+              if (!(m === "server")) {
+                _context.n = 4;
+                break;
+              }
+              setServer(true);
+              _t = setStored;
+              _context.n = 1;
+              return authOwnerPinSet();
+            case 1:
+              if (!_context.v) {
+                _context.n = 2;
+                break;
+              }
+              _t2 = "set";
+              _context.n = 3;
+              break;
+            case 2:
+              _t2 = null;
+            case 3:
+              _t(_t2);
+              return _context.a(2);
+            case 4:
+              loadShared(K.ownerpin).then(function (v) {
+                return setStored(v || null);
+              });
+              loadShared(K.settings).then(function (v) {
+                return setAcct(v && v.accountantPin || "");
+              });
+            case 5:
+              return _context.a(2);
+          }
+        }, _callee);
+      }));
+      return function (_x14) {
+        return _ref16.apply(this, arguments);
+      };
+    }());
   }, []);
   var go = /*#__PURE__*/function () {
-    var _go = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-      return _regenerator().w(function (_context) {
-        while (1) switch (_context.n) {
+    var _go = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+      var _r, r;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.n) {
           case 0:
-            if (!stored) {
-              _context.n = 1;
+            if (!server) {
+              _context2.n = 7;
               break;
             }
-            if (pin === String(stored)) onUnlock("owner", pin);else if (acct && pin === String(acct)) onUnlock("acct", pin);else setErr("Incorrect PIN");
-            return _context.a(2);
+            if (!stored) {
+              _context2.n = 3;
+              break;
+            }
+            _context2.n = 1;
+            return authLogin(asAcct ? "Accountant" : "Owner", pin);
           case 1:
+            _r = _context2.v;
+            if (!(_r && _r.ok)) {
+              _context2.n = 2;
+              break;
+            }
+            onUnlock(_r.role === "owner" ? "owner" : "acct", pin);
+            return _context2.a(2);
+          case 2:
+            setErr(_r && _r.error === "locked" ? "Too many wrong tries. Try again in ".concat(_r.minutes || 10, " minutes.") : _r && _r.error === "network" ? "No connection. Try again." : "Incorrect PIN");
+            setPin("");
+            return _context2.a(2);
+          case 3:
             if (!(pin.length < 4)) {
-              _context.n = 2;
+              _context2.n = 4;
               break;
             }
             setErr("Use at least 4 digits");
-            return _context.a(2);
-          case 2:
+            return _context2.a(2);
+          case 4:
             if (!(pin !== pin2)) {
-              _context.n = 3;
+              _context2.n = 5;
               break;
             }
             setErr("PINs do not match");
-            return _context.a(2);
-          case 3:
-            _context.n = 4;
-            return saveShared(K.ownerpin, pin);
-          case 4:
-            onUnlock("owner", pin);
+            return _context2.a(2);
           case 5:
-            return _context.a(2);
+            _context2.n = 6;
+            return authSetupOwner(pin);
+          case 6:
+            r = _context2.v;
+            if (r && r.ok) onUnlock("owner", pin);else setErr("Could not save the PIN. Try again.");
+            return _context2.a(2);
+          case 7:
+            if (!stored) {
+              _context2.n = 8;
+              break;
+            }
+            if (pin === String(stored)) onUnlock("owner", pin);else if (acct && pin === String(acct)) onUnlock("acct", pin);else setErr("Incorrect PIN");
+            return _context2.a(2);
+          case 8:
+            if (!(pin.length < 4)) {
+              _context2.n = 9;
+              break;
+            }
+            setErr("Use at least 4 digits");
+            return _context2.a(2);
+          case 9:
+            if (!(pin !== pin2)) {
+              _context2.n = 10;
+              break;
+            }
+            setErr("PINs do not match");
+            return _context2.a(2);
+          case 10:
+            _context2.n = 11;
+            return saveShared(K.ownerpin, pin);
+          case 11:
+            onUnlock("owner", pin);
+          case 12:
+            return _context2.a(2);
         }
-      }, _callee);
+      }, _callee2);
     }));
     function go() {
       return _go.apply(this, arguments);
@@ -2296,7 +2686,7 @@ function Lock(_ref15) {
       color: T.dim,
       margin: "6px 0 26px"
     }
-  }, stored === undefined ? "Loading…" : stored ? "Enter the owner PIN to continue." : "Create an owner PIN. It is the same PIN as the crew app's Hardscaping lock."), stored !== undefined && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+  }, stored === undefined ? "Loading…" : stored ? asAcct ? "Enter the accountant PIN to continue." : "Enter the owner PIN to continue." : "Create an owner PIN. It is the same PIN as the crew app's Hardscaping lock."), stored !== undefined && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
     type: "password",
     inputMode: "numeric",
     autoFocus: true,
@@ -2343,22 +2733,40 @@ function Lock(_ref15) {
     style: {
       width: "100%"
     }
-  }, stored ? "Unlock" : "Create PIN"))));
+  }, stored ? "Unlock" : "Create PIN"), server && stored && /*#__PURE__*/React.createElement("button", {
+    onClick: function onClick() {
+      setAsAcct(function (a) {
+        return !a;
+      });
+      setErr("");
+      setPin("");
+    },
+    style: {
+      background: "none",
+      border: "none",
+      color: T.dim,
+      fontSize: 12,
+      textDecoration: "underline",
+      cursor: "pointer",
+      marginTop: 16,
+      fontFamily: "inherit"
+    }
+  }, asAcct ? "Sign in as owner instead" : "Accountant sign-in"))));
 }
 
 // Expandable breakdown: groups (client / category) with totals, tap a group to see its lines
-function Breakdown(_ref16) {
-  var title = _ref16.title,
-    sub = _ref16.sub,
-    groups = _ref16.groups,
-    total = _ref16.total,
-    color = _ref16.color,
-    onClose = _ref16.onClose,
-    footer = _ref16.footer;
-  var _useState1 = useState(groups.length === 1 ? 0 : -1),
-    _useState10 = _slicedToArray(_useState1, 2),
-    open = _useState10[0],
-    setOpen = _useState10[1];
+function Breakdown(_ref17) {
+  var title = _ref17.title,
+    sub = _ref17.sub,
+    groups = _ref17.groups,
+    total = _ref17.total,
+    color = _ref17.color,
+    onClose = _ref17.onClose,
+    footer = _ref17.footer;
+  var _useState13 = useState(groups.length === 1 ? 0 : -1),
+    _useState14 = _slicedToArray(_useState13, 2),
+    open = _useState14[0],
+    setOpen = _useState14[1];
   return /*#__PURE__*/React.createElement(Sheet, {
     title: title,
     onClose: onClose,
@@ -2583,18 +2991,18 @@ function payStats(data, cid) {
     }, 0) / late.length) : 0
   };
 }
-function Dashboard(_ref17) {
-  var data = _ref17.data,
-    go = _ref17.go,
-    openInvoice = _ref17.openInvoice,
-    ro = _ref17.ro,
-    openRecurringDue = _ref17.openRecurringDue;
+function Dashboard(_ref18) {
+  var data = _ref18.data,
+    go = _ref18.go,
+    openInvoice = _ref18.openInvoice,
+    ro = _ref18.ro,
+    openRecurringDue = _ref18.openRecurringDue;
   var invoices = data.invoices,
     expenses = data.expenses;
-  var _useState11 = useState(null),
-    _useState12 = _slicedToArray(_useState11, 2),
-    bd = _useState12[0],
-    setBd = _useState12[1];
+  var _useState15 = useState(null),
+    _useState16 = _slicedToArray(_useState15, 2),
+    bd = _useState16[0],
+    setBd = _useState16[1];
   var recDue = (data.recurring || []).reduce(function (n, t) {
     return n + dueDates(t).length;
   }, 0);
@@ -2688,12 +3096,12 @@ function Dashboard(_ref17) {
       return c.id === id;
     })) || "No customer";
   };
-  var Stat = function Stat(_ref18) {
-    var label = _ref18.label,
-      value = _ref18.value,
-      color = _ref18.color,
-      sub = _ref18.sub,
-      onClick = _ref18.onClick;
+  var Stat = function Stat(_ref19) {
+    var label = _ref19.label,
+      value = _ref19.value,
+      color = _ref19.color,
+      sub = _ref19.sub,
+      onClick = _ref19.onClick;
     return /*#__PURE__*/React.createElement(Card, {
       onClick: onClick,
       style: {
@@ -2843,10 +3251,10 @@ function Dashboard(_ref17) {
         color: T.mid,
         fontVariantNumeric: "tabular-nums"
       }
-    }, chase.length, " invoice", chase.length === 1 ? "" : "s", " \xB7 ", money(tot))), chase.slice(0, 5).map(function (_ref19) {
-      var i = _ref19.i,
-        c = _ref19.c,
-        s = _ref19.s;
+    }, chase.length, " invoice", chase.length === 1 ? "" : "s", " \xB7 ", money(tot))), chase.slice(0, 5).map(function (_ref20) {
+      var i = _ref20.i,
+        c = _ref20.c,
+        s = _ref20.s;
       var d = daysBetween(i.dueDate || todayStr(), todayStr());
       return /*#__PURE__*/React.createElement("div", {
         key: i.id,
@@ -3092,10 +3500,10 @@ function Dashboard(_ref17) {
       display: "grid",
       gap: 8
     }
-  }, recent.map(function (_ref20) {
-    var i = _ref20.i,
-      c = _ref20.c,
-      s = _ref20.s;
+  }, recent.map(function (_ref21) {
+    var i = _ref21.i,
+      c = _ref21.c,
+      s = _ref21.s;
     return /*#__PURE__*/React.createElement(Card, {
       key: i.id,
       onClick: function onClick() {
@@ -3300,22 +3708,22 @@ function Dashboard(_ref17) {
 }
 
 // ── Invoices ─────────────────────────────────────────────────────────────────
-function InvoiceList(_ref21) {
-  var data = _ref21.data,
-    openInvoice = _ref21.openInvoice,
-    newInvoice = _ref21.newInvoice,
-    ro = _ref21.ro,
-    openRecurring = _ref21.openRecurring,
-    onMode = _ref21.onMode,
-    startFilter = _ref21.startFilter;
-  var _useState13 = useState(startFilter || "All"),
-    _useState14 = _slicedToArray(_useState13, 2),
-    f = _useState14[0],
-    setF = _useState14[1];
-  var _useState15 = useState(""),
-    _useState16 = _slicedToArray(_useState15, 2),
-    q = _useState16[0],
-    setQ = _useState16[1];
+function InvoiceList(_ref22) {
+  var data = _ref22.data,
+    openInvoice = _ref22.openInvoice,
+    newInvoice = _ref22.newInvoice,
+    ro = _ref22.ro,
+    openRecurring = _ref22.openRecurring,
+    onMode = _ref22.onMode,
+    startFilter = _ref22.startFilter;
+  var _useState17 = useState(startFilter || "All"),
+    _useState18 = _slicedToArray(_useState17, 2),
+    f = _useState18[0],
+    setF = _useState18[1];
+  var _useState19 = useState(""),
+    _useState20 = _slicedToArray(_useState19, 2),
+    q = _useState20[0],
+    setQ = _useState20[1];
   var custName = function custName(id) {
     return custLabel(data.customers.find(function (c) {
       return c.id === id;
@@ -3379,11 +3787,11 @@ function InvoiceList(_ref21) {
       display: "grid",
       gap: 8
     }
-  }, rows.map(function (_ref22) {
+  }, rows.map(function (_ref23) {
     var _slice$;
-    var i = _ref22.i,
-      c = _ref22.c,
-      s = _ref22.s;
+    var i = _ref23.i,
+      c = _ref23.c,
+      s = _ref23.s;
     return /*#__PURE__*/React.createElement(Card, {
       key: i.id,
       onClick: function onClick() {
@@ -3463,12 +3871,12 @@ function InvoiceList(_ref21) {
     }, s === "Paid" ? "Paid ".concat(fmtDate((_slice$ = (i.payments || []).slice(-1)[0]) === null || _slice$ === void 0 ? void 0 : _slice$.date)) : s === "Draft" ? "Not sent" : s === "Overdue" ? "".concat(daysBetween(i.dueDate, todayStr()), " days overdue") : "Due ".concat(fmtDate(i.dueDate)))));
   })));
 }
-function InvoiceEditor(_ref23) {
-  var data = _ref23.data,
-    invoice = _ref23.invoice,
-    onSave = _ref23.onSave,
-    onClose = _ref23.onClose,
-    importFrom = _ref23.importFrom;
+function InvoiceEditor(_ref24) {
+  var data = _ref24.data,
+    invoice = _ref24.invoice,
+    onSave = _ref24.onSave,
+    onClose = _ref24.onClose,
+    importFrom = _ref24.importFrom;
   var s = data.settings;
   var blank = function blank() {
     var _data$customers$, _TERMS$s$terms;
@@ -3494,18 +3902,18 @@ function InvoiceEditor(_ref23) {
       createdAt: new Date().toISOString()
     };
   };
-  var _useState17 = useState(invoice ? JSON.parse(JSON.stringify(invoice)) : importFrom || blank()),
-    _useState18 = _slicedToArray(_useState17, 2),
-    f = _useState18[0],
-    setF = _useState18[1];
-  var _useState19 = useState(false),
-    _useState20 = _slicedToArray(_useState19, 2),
-    showEst = _useState20[0],
-    setShowEst = _useState20[1];
-  var _useState21 = useState(null),
+  var _useState21 = useState(invoice ? JSON.parse(JSON.stringify(invoice)) : importFrom || blank()),
     _useState22 = _slicedToArray(_useState21, 2),
-    estimates = _useState22[0],
-    setEstimates = _useState22[1];
+    f = _useState22[0],
+    setF = _useState22[1];
+  var _useState23 = useState(false),
+    _useState24 = _slicedToArray(_useState23, 2),
+    showEst = _useState24[0],
+    setShowEst = _useState24[1];
+  var _useState25 = useState(null),
+    _useState26 = _slicedToArray(_useState25, 2),
+    estimates = _useState26[0],
+    setEstimates = _useState26[1];
   var set = function set(k, v) {
     return setF(function (p) {
       return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, k, v));
@@ -3531,32 +3939,32 @@ function InvoiceEditor(_ref23) {
     });
   };
   var loadEstimates = /*#__PURE__*/function () {
-    var _loadEstimates = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-      var _t, _t2;
-      return _regenerator().w(function (_context2) {
-        while (1) switch (_context2.n) {
+    var _loadEstimates = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var _t3, _t4;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.n) {
           case 0:
             setShowEst(true);
             if (estimates) {
-              _context2.n = 3;
+              _context3.n = 3;
               break;
             }
-            _t = setEstimates;
-            _context2.n = 1;
+            _t3 = setEstimates;
+            _context3.n = 1;
             return loadShared(K.estimates);
           case 1:
-            _t2 = _context2.v;
-            if (_t2) {
-              _context2.n = 2;
+            _t4 = _context3.v;
+            if (_t4) {
+              _context3.n = 2;
               break;
             }
-            _t2 = [];
+            _t4 = [];
           case 2:
-            _t(_t2);
+            _t3(_t4);
           case 3:
-            return _context2.a(2);
+            return _context3.a(2);
         }
-      }, _callee2);
+      }, _callee3);
     }));
     function loadEstimates() {
       return _loadEstimates.apply(this, arguments);
@@ -3875,10 +4283,10 @@ function InvoiceEditor(_ref23) {
       padding: 14,
       fontVariantNumeric: "tabular-nums"
     }
-  }, [["Subtotal", c.subtotal], c.disc > 0 && ["Discount", -c.disc], f.taxOn && ["HST (".concat(f.taxRate, "%)"), c.tax]].filter(Boolean).map(function (_ref24) {
-    var _ref25 = _slicedToArray(_ref24, 2),
-      a = _ref25[0],
-      b = _ref25[1];
+  }, [["Subtotal", c.subtotal], c.disc > 0 && ["Discount", -c.disc], f.taxOn && ["HST (".concat(f.taxRate, "%)"), c.tax]].filter(Boolean).map(function (_ref25) {
+    var _ref26 = _slicedToArray(_ref25, 2),
+      a = _ref26[0],
+      b = _ref26[1];
     return /*#__PURE__*/React.createElement("div", {
       key: a,
       style: {
@@ -3954,27 +4362,27 @@ function InvoiceEditor(_ref23) {
 }
 
 // ── Invoice view / print / payments ──────────────────────────────────────────
-function PaymentSheet(_ref26) {
-  var inv = _ref26.inv,
-    onSave = _ref26.onSave,
-    onClose = _ref26.onClose;
+function PaymentSheet(_ref27) {
+  var inv = _ref27.inv,
+    onSave = _ref27.onSave,
+    onClose = _ref27.onClose;
   var c = calc(inv);
-  var _useState23 = useState(String(c.balance)),
-    _useState24 = _slicedToArray(_useState23, 2),
-    amt = _useState24[0],
-    setAmt = _useState24[1];
-  var _useState25 = useState(todayStr()),
-    _useState26 = _slicedToArray(_useState25, 2),
-    date = _useState26[0],
-    setDate = _useState26[1];
-  var _useState27 = useState("Interac e-Transfer"),
+  var _useState27 = useState(String(c.balance)),
     _useState28 = _slicedToArray(_useState27, 2),
-    method = _useState28[0],
-    setMethod = _useState28[1];
-  var _useState29 = useState(""),
+    amt = _useState28[0],
+    setAmt = _useState28[1];
+  var _useState29 = useState(todayStr()),
     _useState30 = _slicedToArray(_useState29, 2),
-    note = _useState30[0],
-    setNote = _useState30[1];
+    date = _useState30[0],
+    setDate = _useState30[1];
+  var _useState31 = useState("Interac e-Transfer"),
+    _useState32 = _slicedToArray(_useState31, 2),
+    method = _useState32[0],
+    setMethod = _useState32[1];
+  var _useState33 = useState(""),
+    _useState34 = _slicedToArray(_useState33, 2),
+    note = _useState34[0],
+    setNote = _useState34[1];
   var ok = (parseFloat(amt) || 0) > 0;
   return /*#__PURE__*/React.createElement(Sheet, {
     title: "Record payment",
@@ -4038,50 +4446,50 @@ function PaymentSheet(_ref26) {
     placeholder: "Optional (e.g. e-transfer reference)"
   }));
 }
-function EmailSheet(_ref27) {
-  var inv = _ref27.inv,
-    cust = _ref27.cust,
-    s = _ref27.s,
-    c = _ref27.c,
-    kind = _ref27.kind,
-    onClose = _ref27.onClose,
-    onSent = _ref27.onSent;
+function EmailSheet(_ref28) {
+  var inv = _ref28.inv,
+    cust = _ref28.cust,
+    s = _ref28.s,
+    c = _ref28.c,
+    kind = _ref28.kind,
+    onClose = _ref28.onClose,
+    onSent = _ref28.onSent;
   var first = (cust.name || "").split(" ")[0] || "there";
   var isRem = kind === "reminder";
-  var _useState31 = useState(cust.email || ""),
-    _useState32 = _slicedToArray(_useState31, 2),
-    to = _useState32[0],
-    setTo = _useState32[1];
-  var _useState33 = useState(s.emailCopyToMe !== false),
-    _useState34 = _slicedToArray(_useState33, 2),
-    copy = _useState34[0],
-    setCopy = _useState34[1];
-  var _useState35 = useState(isRem ? "Reminder: invoice ".concat(inv.number, " from ").concat(s.businessName) : "Invoice ".concat(inv.number, " from ").concat(s.businessName)),
+  var _useState35 = useState(cust.email || ""),
     _useState36 = _slicedToArray(_useState35, 2),
-    subj = _useState36[0],
-    setSubj = _useState36[1];
-  var _useState37 = useState(isRem ? "Hi ".concat(first, ",\n\nThis is a friendly reminder that invoice ").concat(inv.number, " for ").concat(money(c.balance), " was due on ").concat(fmtDate(inv.dueDate), ". If you've already paid, thank you and please disregard this note.\n\nThank you,\n").concat(s.businessName) : "Hi ".concat(first, ",\n\nPlease find invoice ").concat(inv.number, " below for ").concat(money(c.total), ", due ").concat(fmtDate(inv.dueDate), ".\n\nThank you,\n").concat(s.businessName)),
+    to = _useState36[0],
+    setTo = _useState36[1];
+  var _useState37 = useState(s.emailCopyToMe !== false),
     _useState38 = _slicedToArray(_useState37, 2),
-    msg = _useState38[0],
-    setMsg = _useState38[1];
-  var _useState39 = useState(true),
+    copy = _useState38[0],
+    setCopy = _useState38[1];
+  var _useState39 = useState(isRem ? "Reminder: invoice ".concat(inv.number, " from ").concat(s.businessName) : "Invoice ".concat(inv.number, " from ").concat(s.businessName)),
     _useState40 = _slicedToArray(_useState39, 2),
-    attach = _useState40[0],
-    setAttach = _useState40[1];
-  var _useState41 = useState(false),
+    subj = _useState40[0],
+    setSubj = _useState40[1];
+  var _useState41 = useState(isRem ? "Hi ".concat(first, ",\n\nThis is a friendly reminder that invoice ").concat(inv.number, " for ").concat(money(c.balance), " was due on ").concat(fmtDate(inv.dueDate), ". If you've already paid, thank you and please disregard this note.\n\nThank you,\n").concat(s.businessName) : "Hi ".concat(first, ",\n\nPlease find invoice ").concat(inv.number, " below for ").concat(money(c.total), ", due ").concat(fmtDate(inv.dueDate), ".\n\nThank you,\n").concat(s.businessName)),
     _useState42 = _slicedToArray(_useState41, 2),
-    busy = _useState42[0],
-    setBusy = _useState42[1];
-  var _useState43 = useState(null),
+    msg = _useState42[0],
+    setMsg = _useState42[1];
+  var _useState43 = useState(true),
     _useState44 = _slicedToArray(_useState43, 2),
-    err = _useState44[0],
-    setErr = _useState44[1];
+    attach = _useState44[0],
+    setAttach = _useState44[1];
+  var _useState45 = useState(false),
+    _useState46 = _slicedToArray(_useState45, 2),
+    busy = _useState46[0],
+    setBusy = _useState46[1];
+  var _useState47 = useState(null),
+    _useState48 = _slicedToArray(_useState47, 2),
+    err = _useState48[0],
+    setErr = _useState48[1];
   var valid = /^[^@\s,;]+@[^@\s,;]+\.[^@\s,;]+$/.test(to.trim());
   var send = /*#__PURE__*/function () {
-    var _send = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+    var _send = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
       var html, r;
-      return _regenerator().w(function (_context3) {
-        while (1) switch (_context3.n) {
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.n) {
           case 0:
             setBusy(true);
             setErr(null);
@@ -4092,7 +4500,7 @@ function EmailSheet(_ref27) {
               c: c,
               intro: msg
             });
-            _context3.n = 1;
+            _context4.n = 1;
             return sendEmail({
               to: to.trim(),
               cc: copy && s.email ? s.email : "",
@@ -4111,13 +4519,13 @@ function EmailSheet(_ref27) {
               pdfName: "Invoice-".concat(inv.number, ".pdf")
             });
           case 1:
-            r = _context3.v;
+            r = _context4.v;
             setBusy(false);
             if (r.ok) onSent(to.trim(), kind);else setErr(r);
           case 2:
-            return _context3.a(2);
+            return _context4.a(2);
         }
-      }, _callee3);
+      }, _callee4);
     }));
     function send() {
       return _send.apply(this, arguments);
@@ -4233,38 +4641,38 @@ function EmailSheet(_ref27) {
     }
   }, "Open in my mail app instead"))));
 }
-function InvoiceView(_ref28) {
-  var data = _ref28.data,
-    inv = _ref28.inv,
-    ro = _ref28.ro,
-    onRecurring = _ref28.onRecurring,
-    onEdit = _ref28.onEdit,
-    onUpdate = _ref28.onUpdate,
-    onDelete = _ref28.onDelete,
-    onDuplicate = _ref28.onDuplicate,
-    onClose = _ref28.onClose;
+function InvoiceView(_ref29) {
+  var data = _ref29.data,
+    inv = _ref29.inv,
+    ro = _ref29.ro,
+    onRecurring = _ref29.onRecurring,
+    onEdit = _ref29.onEdit,
+    onUpdate = _ref29.onUpdate,
+    onDelete = _ref29.onDelete,
+    onDuplicate = _ref29.onDuplicate,
+    onClose = _ref29.onClose;
   var s = data.settings,
     cust = data.customers.find(function (x) {
       return x.id === inv.customerId;
     }) || {};
   var c = calc(inv),
     st = statusOf(inv);
-  var _useState45 = useState(false),
-    _useState46 = _slicedToArray(_useState45, 2),
-    pay = _useState46[0],
-    setPay = _useState46[1];
-  var _useState47 = useState(false),
-    _useState48 = _slicedToArray(_useState47, 2),
-    del = _useState48[0],
-    setDel = _useState48[1];
-  var _useState49 = useState(null),
+  var _useState49 = useState(false),
     _useState50 = _slicedToArray(_useState49, 2),
-    em = _useState50[0],
-    setEm = _useState50[1];
-  var _useState51 = useState(""),
+    pay = _useState50[0],
+    setPay = _useState50[1];
+  var _useState51 = useState(false),
     _useState52 = _slicedToArray(_useState51, 2),
-    toast = _useState52[0],
-    setToast = _useState52[1];
+    del = _useState52[0],
+    setDel = _useState52[1];
+  var _useState53 = useState(null),
+    _useState54 = _slicedToArray(_useState53, 2),
+    em = _useState54[0],
+    setEm = _useState54[1];
+  var _useState55 = useState(""),
+    _useState56 = _slicedToArray(_useState55, 2),
+    toast = _useState56[0],
+    setToast = _useState56[1];
   var sent = function sent(to, kind, viaMailApp) {
     setEm(null);
     onUpdate(_objectSpread(_objectSpread({}, inv), {}, {
@@ -4774,8 +5182,8 @@ function InvoiceView(_ref28) {
 }
 
 // ── Customers ────────────────────────────────────────────────────────────────
-function NameToggle(_ref29) {
-  var onMode = _ref29.onMode;
+function NameToggle(_ref30) {
+  var onMode = _ref30.onMode;
   if (!onMode) return null;
   var chip = function chip(m, l) {
     return /*#__PURE__*/React.createElement("button", {
@@ -4812,35 +5220,35 @@ function NameToggle(_ref29) {
     }
   }, "SHOW"), chip("contact", "Contact"), chip("business", "Business"));
 }
-function Customers(_ref30) {
-  var data = _ref30.data,
-    save = _ref30.save,
-    _openInvoice = _ref30.openInvoice,
-    onMode = _ref30.onMode;
-  var _useState53 = useState("active"),
-    _useState54 = _slicedToArray(_useState53, 2),
-    view = _useState54[0],
-    setView = _useState54[1];
-  var _useState55 = useState(null),
-    _useState56 = _slicedToArray(_useState55, 2),
-    arc = _useState56[0],
-    setArc = _useState56[1];
-  var _useState57 = useState(""),
+function Customers(_ref31) {
+  var data = _ref31.data,
+    save = _ref31.save,
+    _openInvoice = _ref31.openInvoice,
+    onMode = _ref31.onMode;
+  var _useState57 = useState("active"),
     _useState58 = _slicedToArray(_useState57, 2),
-    q = _useState58[0],
-    setQ = _useState58[1];
+    view = _useState58[0],
+    setView = _useState58[1];
   var _useState59 = useState(null),
     _useState60 = _slicedToArray(_useState59, 2),
-    edit = _useState60[0],
-    setEdit = _useState60[1];
-  var _useState61 = useState(null),
+    arc = _useState60[0],
+    setArc = _useState60[1];
+  var _useState61 = useState(""),
     _useState62 = _slicedToArray(_useState61, 2),
-    imp = _useState62[0],
-    setImp = _useState62[1];
+    q = _useState62[0],
+    setQ = _useState62[1];
   var _useState63 = useState(null),
     _useState64 = _slicedToArray(_useState63, 2),
-    del = _useState64[0],
-    setDel = _useState64[1];
+    edit = _useState64[0],
+    setEdit = _useState64[1];
+  var _useState65 = useState(null),
+    _useState66 = _slicedToArray(_useState65, 2),
+    imp = _useState66[0],
+    setImp = _useState66[1];
+  var _useState67 = useState(null),
+    _useState68 = _slicedToArray(_useState67, 2),
+    del = _useState68[0],
+    setDel = _useState68[1];
   var bal = function bal(id) {
     return r2(data.invoices.filter(function (i) {
       return i.customerId === id && statusOf(i) !== "Draft";
@@ -4859,15 +5267,15 @@ function Customers(_ref30) {
     });
   });
   var openImport = /*#__PURE__*/function () {
-    var _openImport = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+    var _openImport = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
       var _yield$Promise$all, _yield$Promise$all2, a, b, have, rows;
-      return _regenerator().w(function (_context4) {
-        while (1) switch (_context4.n) {
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.n) {
           case 0:
-            _context4.n = 1;
+            _context5.n = 1;
             return Promise.all([loadShared(K.crewClients), loadShared(K.hscClients)]);
           case 1:
-            _yield$Promise$all = _context4.v;
+            _yield$Promise$all = _context5.v;
             _yield$Promise$all2 = _slicedToArray(_yield$Promise$all, 2);
             a = _yield$Promise$all2[0];
             b = _yield$Promise$all2[1];
@@ -4901,9 +5309,9 @@ function Customers(_ref30) {
               });
             }));
           case 2:
-            return _context4.a(2);
+            return _context5.a(2);
         }
-      }, _callee4);
+      }, _callee5);
     }));
     function openImport() {
       return _openImport.apply(this, arguments);
@@ -5255,19 +5663,19 @@ function Customers(_ref30) {
     }, r.address, " \xB7 ", r.src)));
   }))));
 }
-function CustomerEditor(_ref31) {
-  var c = _ref31.c,
-    invoices = _ref31.invoices,
-    onSave = _ref31.onSave,
-    onClose = _ref31.onClose,
-    onDelete = _ref31.onDelete,
-    onArchive = _ref31.onArchive,
-    onRestore = _ref31.onRestore,
-    openInvoice = _ref31.openInvoice;
-  var _useState65 = useState(c),
-    _useState66 = _slicedToArray(_useState65, 2),
-    f = _useState66[0],
-    setF = _useState66[1];
+function CustomerEditor(_ref32) {
+  var c = _ref32.c,
+    invoices = _ref32.invoices,
+    onSave = _ref32.onSave,
+    onClose = _ref32.onClose,
+    onDelete = _ref32.onDelete,
+    onArchive = _ref32.onArchive,
+    onRestore = _ref32.onRestore,
+    openInvoice = _ref32.openInvoice;
+  var _useState69 = useState(c),
+    _useState70 = _slicedToArray(_useState69, 2),
+    f = _useState70[0],
+    setF = _useState70[1];
   var set = function set(k, v) {
     return setF(function (p) {
       return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, k, v));
@@ -5445,26 +5853,26 @@ function CustomerEditor(_ref31) {
 }
 
 // ── Expenses ─────────────────────────────────────────────────────────────────
-function Expenses(_ref32) {
-  var data = _ref32.data,
-    save = _ref32.save,
-    ro = _ref32.ro;
-  var _useState67 = useState(null),
-    _useState68 = _slicedToArray(_useState67, 2),
-    edit = _useState68[0],
-    setEdit = _useState68[1];
-  var _useState69 = useState("All"),
-    _useState70 = _slicedToArray(_useState69, 2),
-    cat = _useState70[0],
-    setCat = _useState70[1];
-  var _useState71 = useState("month"),
+function Expenses(_ref33) {
+  var data = _ref33.data,
+    save = _ref33.save,
+    ro = _ref33.ro;
+  var _useState71 = useState(null),
     _useState72 = _slicedToArray(_useState71, 2),
-    per = _useState72[0],
-    setPer = _useState72[1];
-  var _useState73 = useState(null),
+    edit = _useState72[0],
+    setEdit = _useState72[1];
+  var _useState73 = useState("All"),
     _useState74 = _slicedToArray(_useState73, 2),
-    del = _useState74[0],
-    setDel = _useState74[1];
+    cat = _useState74[0],
+    setCat = _useState74[1];
+  var _useState75 = useState("month"),
+    _useState76 = _slicedToArray(_useState75, 2),
+    per = _useState76[0],
+    setPer = _useState76[1];
+  var _useState77 = useState(null),
+    _useState78 = _slicedToArray(_useState77, 2),
+    del = _useState78[0],
+    setDel = _useState78[1];
   var range = periodRange(per);
   var list = data.expenses.filter(function (e) {
     return (cat === "All" || e.category === cat) && (per === "all" || inRange(e.date, range));
@@ -5640,25 +6048,25 @@ function Expenses(_ref32) {
     }
   }));
 }
-function ExpenseEditor(_ref33) {
-  var e = _ref33.e,
-    onSave = _ref33.onSave,
-    onClose = _ref33.onClose,
-    onDelete = _ref33.onDelete,
-    defaultRate = _ref33.defaultRate,
-    showBill = _ref33.showBill;
-  var _useState75 = useState(e),
-    _useState76 = _slicedToArray(_useState75, 2),
-    f = _useState76[0],
-    setF = _useState76[1];
-  var _useState77 = useState(false),
-    _useState78 = _slicedToArray(_useState77, 2),
-    busy = _useState78[0],
-    setBusy = _useState78[1];
-  var _useState79 = useState(!!e.hst),
+function ExpenseEditor(_ref34) {
+  var e = _ref34.e,
+    onSave = _ref34.onSave,
+    onClose = _ref34.onClose,
+    onDelete = _ref34.onDelete,
+    defaultRate = _ref34.defaultRate,
+    showBill = _ref34.showBill;
+  var _useState79 = useState(e),
     _useState80 = _slicedToArray(_useState79, 2),
-    hstTouched = _useState80[0],
-    setHstTouched = _useState80[1];
+    f = _useState80[0],
+    setF = _useState80[1];
+  var _useState81 = useState(false),
+    _useState82 = _slicedToArray(_useState81, 2),
+    busy = _useState82[0],
+    setBusy = _useState82[1];
+  var _useState83 = useState(!!e.hst),
+    _useState84 = _slicedToArray(_useState83, 2),
+    hstTouched = _useState84[0],
+    setHstTouched = _useState84[1];
   var set = function set(k, v) {
     return setF(function (p) {
       return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, k, v));
@@ -5686,95 +6094,95 @@ function ExpenseEditor(_ref33) {
       });
     });
   };
-  var _useState81 = useState(null),
-    _useState82 = _slicedToArray(_useState81, 2),
-    pics = _useState82[0],
-    setPics = _useState82[1]; // { orig, crop } for the last photo taken
-  var _useState83 = useState(true),
-    _useState84 = _slicedToArray(_useState83, 2),
-    useCrop = _useState84[0],
-    setUseCrop = _useState84[1];
+  var _useState85 = useState(null),
+    _useState86 = _slicedToArray(_useState85, 2),
+    pics = _useState86[0],
+    setPics = _useState86[1]; // { orig, crop } for the last photo taken
+  var _useState87 = useState(true),
+    _useState88 = _slicedToArray(_useState87, 2),
+    useCrop = _useState88[0],
+    setUseCrop = _useState88[1];
   var store = /*#__PURE__*/function () {
-    var _store = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(data) {
+    var _store = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(data) {
       var url;
-      return _regenerator().w(function (_context5) {
-        while (1) switch (_context5.n) {
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.n) {
           case 0:
-            _context5.n = 1;
+            _context6.n = 1;
             return uploadReceipt(data, "receipt-".concat(Date.now(), "-").concat(Math.random().toString(36).slice(2), ".jpg"));
           case 1:
-            url = _context5.v;
+            url = _context6.v;
             set("receipt", url || data);
           case 2:
-            return _context5.a(2);
+            return _context6.a(2);
         }
-      }, _callee5);
+      }, _callee6);
     }));
-    function store(_x0) {
+    function store(_x15) {
       return _store.apply(this, arguments);
     }
     return store;
   }();
   var pick = /*#__PURE__*/function () {
-    var _pick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(file) {
+    var _pick = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7(file) {
       var p;
-      return _regenerator().w(function (_context6) {
-        while (1) switch (_context6.n) {
-          case 0:
-            if (file) {
-              _context6.n = 1;
-              break;
-            }
-            return _context6.a(2);
-          case 1:
-            setBusy(true);
-            _context6.n = 2;
-            return prepareReceipt(file);
-          case 2:
-            p = _context6.v;
-            if (!p) {
-              _context6.n = 3;
-              break;
-            }
-            setPics(p);
-            setUseCrop(!!p.crop);
-            _context6.n = 3;
-            return store(p.crop || p.orig);
-          case 3:
-            setBusy(false);
-          case 4:
-            return _context6.a(2);
-        }
-      }, _callee6);
-    }));
-    function pick(_x1) {
-      return _pick.apply(this, arguments);
-    }
-    return pick;
-  }();
-  var toggleCrop = /*#__PURE__*/function () {
-    var _toggleCrop = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
-      var n;
       return _regenerator().w(function (_context7) {
         while (1) switch (_context7.n) {
           case 0:
-            if (!(!pics || !pics.crop)) {
+            if (file) {
               _context7.n = 1;
               break;
             }
             return _context7.a(2);
           case 1:
+            setBusy(true);
+            _context7.n = 2;
+            return prepareReceipt(file);
+          case 2:
+            p = _context7.v;
+            if (!p) {
+              _context7.n = 3;
+              break;
+            }
+            setPics(p);
+            setUseCrop(!!p.crop);
+            _context7.n = 3;
+            return store(p.crop || p.orig);
+          case 3:
+            setBusy(false);
+          case 4:
+            return _context7.a(2);
+        }
+      }, _callee7);
+    }));
+    function pick(_x16) {
+      return _pick.apply(this, arguments);
+    }
+    return pick;
+  }();
+  var toggleCrop = /*#__PURE__*/function () {
+    var _toggleCrop = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8() {
+      var n;
+      return _regenerator().w(function (_context8) {
+        while (1) switch (_context8.n) {
+          case 0:
+            if (!(!pics || !pics.crop)) {
+              _context8.n = 1;
+              break;
+            }
+            return _context8.a(2);
+          case 1:
             n = !useCrop;
             setBusy(true);
             setUseCrop(n);
-            _context7.n = 2;
+            _context8.n = 2;
             return store(n ? pics.crop : pics.orig);
           case 2:
             setBusy(false);
           case 3:
-            return _context7.a(2);
+            return _context8.a(2);
         }
-      }, _callee7);
+      }, _callee8);
     }));
     function toggleCrop() {
       return _toggleCrop.apply(this, arguments);
@@ -5995,16 +6403,16 @@ function ExpenseEditor(_ref33) {
 }
 
 // ── Reports ──────────────────────────────────────────────────────────────────
-function Reports(_ref34) {
-  var data = _ref34.data;
-  var _useState85 = useState("quarter"),
-    _useState86 = _slicedToArray(_useState85, 2),
-    per = _useState86[0],
-    setPer = _useState86[1];
-  var _useState87 = useState(false),
-    _useState88 = _slicedToArray(_useState87, 2),
-    ye = _useState88[0],
-    setYe = _useState88[1];
+function Reports(_ref35) {
+  var data = _ref35.data;
+  var _useState89 = useState("quarter"),
+    _useState90 = _slicedToArray(_useState89, 2),
+    per = _useState90[0],
+    setPer = _useState90[1];
+  var _useState91 = useState(false),
+    _useState92 = _slicedToArray(_useState91, 2),
+    ye = _useState92[0],
+    setYe = _useState92[1];
   var range = periodRange(per);
   var custName = function custName(id) {
     return custLabel(data.customers.find(function (c) {
@@ -6065,11 +6473,11 @@ function Reports(_ref34) {
     aging[d <= 0 ? "Current" : d <= 30 ? "1–30 days" : d <= 60 ? "31–60 days" : "61+ days"] += b;
   });
   var maxCat = Math.max.apply(Math, [1].concat(_toConsumableArray(Object.values(byCat))));
-  var Row = function Row(_ref35) {
-    var a = _ref35.a,
-      b = _ref35.b,
-      bold = _ref35.bold,
-      color = _ref35.color;
+  var Row = function Row(_ref36) {
+    var a = _ref36.a,
+      b = _ref36.b,
+      bold = _ref36.bold,
+      color = _ref36.color;
     return /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -6082,9 +6490,9 @@ function Reports(_ref34) {
       }
     }, /*#__PURE__*/React.createElement("span", null, a), /*#__PURE__*/React.createElement("span", null, b));
   };
-  var Sec = function Sec(_ref36) {
-    var t = _ref36.t,
-      children = _ref36.children;
+  var Sec = function Sec(_ref37) {
+    var t = _ref37.t,
+      children = _ref37.children;
     return /*#__PURE__*/React.createElement(Card, {
       style: {
         marginBottom: 14
@@ -6181,10 +6589,10 @@ function Reports(_ref34) {
     }
   }, "No expenses in this period.") : Object.entries(byCat).sort(function (a, b) {
     return b[1] - a[1];
-  }).map(function (_ref37) {
-    var _ref38 = _slicedToArray(_ref37, 2),
-      k = _ref38[0],
-      v = _ref38[1];
+  }).map(function (_ref38) {
+    var _ref39 = _slicedToArray(_ref38, 2),
+      k = _ref39[0],
+      v = _ref39[1];
     return /*#__PURE__*/React.createElement("div", {
       key: k,
       style: {
@@ -6223,10 +6631,10 @@ function Reports(_ref34) {
     }
   }, "No payments in this period.") : Object.entries(byCust).sort(function (a, b) {
     return b[1] - a[1];
-  }).map(function (_ref39) {
-    var _ref40 = _slicedToArray(_ref39, 2),
-      k = _ref40[0],
-      v = _ref40[1];
+  }).map(function (_ref40) {
+    var _ref41 = _slicedToArray(_ref40, 2),
+      k = _ref41[0],
+      v = _ref41[1];
     return /*#__PURE__*/React.createElement(Row, {
       key: k,
       a: custName(Number(k) || k),
@@ -6234,10 +6642,10 @@ function Reports(_ref34) {
     });
   })), /*#__PURE__*/React.createElement(Sec, {
     t: "Unpaid invoices, by age (as of today)"
-  }, Object.entries(aging).map(function (_ref41) {
-    var _ref42 = _slicedToArray(_ref41, 2),
-      k = _ref42[0],
-      v = _ref42[1];
+  }, Object.entries(aging).map(function (_ref42) {
+    var _ref43 = _slicedToArray(_ref42, 2),
+      k = _ref43[0],
+      v = _ref43[1];
     return /*#__PURE__*/React.createElement(Row, {
       key: k,
       a: k,
@@ -6321,53 +6729,53 @@ function Reports(_ref34) {
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
-function Settings(_ref43) {
-  var data = _ref43.data,
-    save = _ref43.save,
-    lock = _ref43.lock,
-    reload = _ref43.reload;
-  var _useState89 = useState(data.settings),
-    _useState90 = _slicedToArray(_useState89, 2),
-    f = _useState90[0],
-    setF = _useState90[1];
-  var _useState91 = useState(false),
-    _useState92 = _slicedToArray(_useState91, 2),
-    saved = _useState92[0],
-    setSaved = _useState92[1];
-  var _useState93 = useState(""),
+function Settings(_ref44) {
+  var data = _ref44.data,
+    save = _ref44.save,
+    lock = _ref44.lock,
+    reload = _ref44.reload;
+  var _useState93 = useState(data.settings),
     _useState94 = _slicedToArray(_useState93, 2),
-    msg = _useState94[0],
-    setMsg = _useState94[1];
-  var _useState95 = useState(null),
+    f = _useState94[0],
+    setF = _useState94[1];
+  var _useState95 = useState(false),
     _useState96 = _slicedToArray(_useState95, 2),
-    snaps = _useState96[0],
-    setSnaps = _useState96[1];
-  var _useState97 = useState(null),
+    saved = _useState96[0],
+    setSaved = _useState96[1];
+  var _useState97 = useState(""),
     _useState98 = _slicedToArray(_useState97, 2),
-    rst = _useState98[0],
-    setRst = _useState98[1];
+    msg = _useState98[0],
+    setMsg = _useState98[1];
+  var _useState99 = useState(null),
+    _useState100 = _slicedToArray(_useState99, 2),
+    snaps = _useState100[0],
+    setSnaps = _useState100[1];
+  var _useState101 = useState(null),
+    _useState102 = _slicedToArray(_useState101, 2),
+    rst = _useState102[0],
+    setRst = _useState102[1];
   useEffect(function () {
     listBackups().then(setSnaps);
   }, []);
   var restoreSnap = /*#__PURE__*/function () {
-    var _restoreSnap = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(s) {
+    var _restoreSnap = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9(s) {
       var row, j;
-      return _regenerator().w(function (_context8) {
-        while (1) switch (_context8.n) {
+      return _regenerator().w(function (_context9) {
+        while (1) switch (_context9.n) {
           case 0:
-            _context8.n = 1;
+            _context9.n = 1;
             return loadShared(s.key);
           case 1:
-            row = _context8.v;
+            row = _context9.v;
             setRst(null);
             if (!(!row || !row.data)) {
-              _context8.n = 2;
+              _context9.n = 2;
               break;
             }
             setMsg("Could not load that backup.");
-            return _context8.a(2);
+            return _context9.a(2);
           case 2:
-            _context8.n = 3;
+            _context9.n = 3;
             return writeBackup(data, "pvb-backup-pre-restore");
           case 3:
             j = row.data;
@@ -6380,11 +6788,11 @@ function Settings(_ref43) {
             if (j.settings) save("settings", _objectSpread(_objectSpread({}, DEFAULT_SETTINGS), j.settings));
             setMsg("Restored. Your data from just before the restore was kept as a safety backup.");
           case 4:
-            return _context8.a(2);
+            return _context9.a(2);
         }
-      }, _callee8);
+      }, _callee9);
     }));
-    function restoreSnap(_x10) {
+    function restoreSnap(_x17) {
       return _restoreSnap.apply(this, arguments);
     }
     return restoreSnap;
@@ -6420,7 +6828,7 @@ function Settings(_ref43) {
         save("journal", j.journal || []);
         if (j.settings) save("settings", _objectSpread(_objectSpread({}, DEFAULT_SETTINGS), j.settings));
         setMsg("Backup restored.");
-      } catch (_unused3) {
+      } catch (_unused6) {
         setMsg("That file is not a Pleasantview Books backup.");
       }
     };
@@ -6584,20 +6992,20 @@ function Settings(_ref43) {
       return set("emailCopyToMe", e.target.checked);
     }
   }), " Send me a copy of every invoice by default"), /*#__PURE__*/React.createElement(Btn, {
-    onClick: /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9() {
+    onClick: /*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
       var r;
-      return _regenerator().w(function (_context9) {
-        while (1) switch (_context9.n) {
+      return _regenerator().w(function (_context0) {
+        while (1) switch (_context0.n) {
           case 0:
             if (f.email) {
-              _context9.n = 1;
+              _context0.n = 1;
               break;
             }
             setMsg("Add your business email above first, then save.");
-            return _context9.a(2);
+            return _context0.a(2);
           case 1:
             setMsg("Sending a test email…");
-            _context9.n = 2;
+            _context0.n = 2;
             return sendEmail({
               to: f.email,
               subject: "Pleasantview Books test email",
@@ -6607,12 +7015,12 @@ function Settings(_ref43) {
               replyTo: f.email
             });
           case 2:
-            r = _context9.v;
+            r = _context0.v;
             setMsg(r.ok ? "Test email sent to ".concat(f.email, ".") : r.error);
           case 3:
-            return _context9.a(2);
+            return _context0.a(2);
         }
-      }, _callee9);
+      }, _callee0);
     })),
     style: {
       width: "100%"
@@ -6849,59 +7257,59 @@ function Settings(_ref43) {
 
 // ── App shell ────────────────────────────────────────────────────────────────
 function App() {
-  var _useState99 = useState(function () {
+  var _useState103 = useState(function () {
       try {
         return sessionStorage.getItem("pvb-ok") || "";
-      } catch (_unused4) {
+      } catch (_unused7) {
         return "";
       }
     }),
-    _useState100 = _slicedToArray(_useState99, 2),
-    mode = _useState100[0],
-    setMode = _useState100[1];
+    _useState104 = _slicedToArray(_useState103, 2),
+    mode = _useState104[0],
+    setMode = _useState104[1];
   var unlocked = !!mode,
     ro = mode === "acct";
-  var _useState101 = useState(null),
-    _useState102 = _slicedToArray(_useState101, 2),
-    data = _useState102[0],
-    setData = _useState102[1];
-  var _useState103 = useState("dash"),
-    _useState104 = _slicedToArray(_useState103, 2),
-    tab = _useState104[0],
-    setTab = _useState104[1];
   var _useState105 = useState(null),
     _useState106 = _slicedToArray(_useState105, 2),
-    viewId = _useState106[0],
-    setViewId = _useState106[1];
-  var _useState107 = useState(null),
+    data = _useState106[0],
+    setData = _useState106[1];
+  var _useState107 = useState("dash"),
     _useState108 = _slicedToArray(_useState107, 2),
-    editing = _useState108[0],
-    setEditing = _useState108[1]; // invoice object | "new"
+    tab = _useState108[0],
+    setTab = _useState108[1];
   var _useState109 = useState(null),
     _useState110 = _slicedToArray(_useState109, 2),
-    draftFrom = _useState110[0],
-    setDraftFrom = _useState110[1];
-  var _useState111 = useState(false),
+    viewId = _useState110[0],
+    setViewId = _useState110[1];
+  var _useState111 = useState(null),
     _useState112 = _slicedToArray(_useState111, 2),
-    saveErr = _useState112[0],
-    setSaveErr = _useState112[1];
-  var _useState113 = useState(""),
+    editing = _useState112[0],
+    setEditing = _useState112[1]; // invoice object | "new"
+  var _useState113 = useState(null),
     _useState114 = _slicedToArray(_useState113, 2),
-    invStart = _useState114[0],
-    setInvStart = _useState114[1];
-  var _useState115 = useState(null),
+    draftFrom = _useState114[0],
+    setDraftFrom = _useState114[1];
+  var _useState115 = useState(false),
     _useState116 = _slicedToArray(_useState115, 2),
-    rec = _useState116[0],
-    setRec = _useState116[1]; // null | "list" | "due"
-  var loadAll = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
+    saveErr = _useState116[0],
+    setSaveErr = _useState116[1];
+  var _useState117 = useState(""),
+    _useState118 = _slicedToArray(_useState117, 2),
+    invStart = _useState118[0],
+    setInvStart = _useState118[1];
+  var _useState119 = useState(null),
+    _useState120 = _slicedToArray(_useState119, 2),
+    rec = _useState120[0],
+    setRec = _useState120[1]; // null | "list" | "due"
+  var loadAll = useCallback(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
     var _yield$Promise$all3, _yield$Promise$all4, customers, invoices, expenses, settings, recurring, assets, journal;
-    return _regenerator().w(function (_context0) {
-      while (1) switch (_context0.n) {
+    return _regenerator().w(function (_context1) {
+      while (1) switch (_context1.n) {
         case 0:
-          _context0.n = 1;
+          _context1.n = 1;
           return Promise.all([loadShared(K.customers), loadShared(K.invoices), loadShared(K.expenses), loadShared(K.settings), loadShared(K.recurring), loadShared(K.assets), loadShared(K.journal)]);
         case 1:
-          _yield$Promise$all3 = _context0.v;
+          _yield$Promise$all3 = _context1.v;
           _yield$Promise$all4 = _slicedToArray(_yield$Promise$all3, 7);
           customers = _yield$Promise$all4[0];
           invoices = _yield$Promise$all4[1];
@@ -6920,9 +7328,9 @@ function App() {
             settings: _objectSpread(_objectSpread({}, DEFAULT_SETTINGS), settings || {})
           });
         case 2:
-          return _context0.a(2);
+          return _context1.a(2);
       }
-    }, _callee0);
+    }, _callee1);
   })), []);
   useEffect(function () {
     if (unlocked) loadAll();
@@ -6971,40 +7379,40 @@ function App() {
       window.removeEventListener("pagehide", endSession);
     };
   });
-  var _useState117 = useState(false),
-    _useState118 = _slicedToArray(_useState117, 2),
-    syncing = _useState118[0],
-    setSyncing = _useState118[1];
+  var _useState121 = useState(false),
+    _useState122 = _slicedToArray(_useState121, 2),
+    syncing = _useState122[0],
+    setSyncing = _useState122[1];
   var doSync = /*#__PURE__*/function () {
-    var _doSync = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
-      return _regenerator().w(function (_context1) {
-        while (1) switch (_context1.n) {
+    var _doSync = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
+      return _regenerator().w(function (_context10) {
+        while (1) switch (_context10.n) {
           case 0:
             setSyncing(true);
-            _context1.n = 1;
+            _context10.n = 1;
             return loadAll();
           case 1:
             setTimeout(function () {
               return setSyncing(false);
             }, 400);
           case 2:
-            return _context1.a(2);
+            return _context10.a(2);
         }
-      }, _callee1);
+      }, _callee10);
     }));
     function doSync() {
       return _doSync.apply(this, arguments);
     }
     return doSync;
   }();
-  var _useState119 = useState(null),
-    _useState120 = _slicedToArray(_useState119, 2),
-    rstFile = _useState120[0],
-    setRstFile = _useState120[1];
-  var _useState121 = useState(""),
-    _useState122 = _slicedToArray(_useState121, 2),
-    topMsg = _useState122[0],
-    setTopMsg = _useState122[1];
+  var _useState123 = useState(null),
+    _useState124 = _slicedToArray(_useState123, 2),
+    rstFile = _useState124[0],
+    setRstFile = _useState124[1];
+  var _useState125 = useState(""),
+    _useState126 = _slicedToArray(_useState125, 2),
+    topMsg = _useState126[0],
+    setTopMsg = _useState126[1];
   var backupNow = function backupNow() {
     downloadText("pleasantview-books-backup-".concat(todayStr(), ".json"), JSON.stringify({
       customers: data.customers,
@@ -7028,7 +7436,7 @@ function App() {
         var j = JSON.parse(fr.result);
         if (!Array.isArray(j.invoices) || !Array.isArray(j.customers)) throw new Error();
         setRstFile(j);
-      } catch (_unused5) {
+      } catch (_unused8) {
         setTopMsg("That file is not a Pleasantview Books backup.");
         setTimeout(function () {
           return setTopMsg("");
@@ -7038,14 +7446,14 @@ function App() {
     fr.readAsText(file);
   };
   var applyRestore = /*#__PURE__*/function () {
-    var _applyRestore = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
+    var _applyRestore = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11() {
       var j;
-      return _regenerator().w(function (_context10) {
-        while (1) switch (_context10.n) {
+      return _regenerator().w(function (_context11) {
+        while (1) switch (_context11.n) {
           case 0:
             j = rstFile;
             setRstFile(null);
-            _context10.n = 1;
+            _context11.n = 1;
             return writeBackup(data, "pvb-backup-pre-restore");
           case 1:
             save("customers", j.customers);
@@ -7060,9 +7468,9 @@ function App() {
               return setTopMsg("");
             }, 5000);
           case 2:
-            return _context10.a(2);
+            return _context11.a(2);
         }
-      }, _callee10);
+      }, _callee11);
     }));
     function applyRestore() {
       return _applyRestore.apply(this, arguments);
@@ -7073,20 +7481,41 @@ function App() {
     try {
       sessionStorage.setItem("pvb-ok", m);
       sessionStorage.setItem("pvb-pin", m === "owner" ? pin : "");
-    } catch (_unused6) {}
+    } catch (_unused9) {}
     setMode(m);
   };
   var lock = function lock() {
     endSession();
+    authLogout();
     try {
       sessionStorage.removeItem("pvb-ok");
       sessionStorage.removeItem("pvb-pin");
-    } catch (_unused7) {}
+    } catch (_unused0) {}
     setMode("");
     setTab("dash");
     setViewId(null);
     setData(null);
   };
+  // Server sign-in: a window left unlocked from before the sign-in existed, or an expired sign-in, goes back to the lock screen.
+  useEffect(function () {
+    var drop = function drop() {
+      try {
+        sessionStorage.removeItem("pvb-ok");
+        sessionStorage.removeItem("pvb-pin");
+      } catch (_unused1) {}
+      setMode("");
+      setTab("dash");
+      setViewId(null);
+      setData(null);
+    };
+    authNeedsLogin().then(function (need) {
+      if (need) drop();
+    });
+    window.addEventListener("pvb-auth-expired", drop);
+    return function () {
+      return window.removeEventListener("pvb-auth-expired", drop);
+    };
+  }, []);
   if (!unlocked) return /*#__PURE__*/React.createElement(Lock, {
     onUnlock: unlock
   });
@@ -7140,19 +7569,19 @@ function App() {
     setEditing("new");
   };
   var generateRecurring = /*#__PURE__*/function () {
-    var _generateRecurring = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11(items, emailNow, progress) {
+    var _generateRecurring = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12(items, emailNow, progress) {
       var settings, newInvs, recMap, failed, emailed, n, _loop, k;
-      return _regenerator().w(function (_context12) {
-        while (1) switch (_context12.n) {
+      return _regenerator().w(function (_context13) {
+        while (1) switch (_context13.n) {
           case 0:
             settings = data.settings;
             newInvs = [];
             recMap = {};
             failed = [];
             emailed = 0, n = 0;
-            items.forEach(function (_ref46) {
-              var t = _ref46.t,
-                dates = _ref46.dates;
+            items.forEach(function (_ref47) {
+              var t = _ref47.t,
+                dates = _ref47.dates;
               dates.forEach(function (d) {
                 var _TERMS$t$terms;
                 var number = nextInvoiceNumber(settings, d);
@@ -7189,13 +7618,13 @@ function App() {
               });
             });
             if (!emailNow) {
-              _context12.n = 3;
+              _context13.n = 3;
               break;
             }
             _loop = /*#__PURE__*/_regenerator().m(function _loop() {
               var inv, cust, c, s, msg, r;
-              return _regenerator().w(function (_context11) {
-                while (1) switch (_context11.n) {
+              return _regenerator().w(function (_context12) {
+                while (1) switch (_context12.n) {
                   case 0:
                     inv = newInvs[k];
                     progress("Emailing ".concat(k + 1, " of ").concat(newInvs.length, "\u2026"));
@@ -7203,7 +7632,7 @@ function App() {
                       return c.id === inv.customerId;
                     }) || {}, c = calc(inv), s = settings;
                     msg = "Hi ".concat((cust.name || "").split(" ")[0] || "there", ",\n\nPlease find invoice ").concat(inv.number, " below for ").concat(money(c.total), ", due ").concat(fmtDate(inv.dueDate), ".\n\nThank you,\n").concat(s.businessName);
-                    _context11.n = 1;
+                    _context12.n = 1;
                     return sendEmail({
                       to: cust.email,
                       cc: s.emailCopyToMe !== false && s.email ? s.email : "",
@@ -7228,7 +7657,7 @@ function App() {
                       pdfName: "Invoice-".concat(inv.number, ".pdf")
                     });
                   case 1:
-                    r = _context11.v;
+                    r = _context12.v;
                     if (r.ok) {
                       inv.status = "Sent";
                       inv.sentAt = new Date().toISOString();
@@ -7240,20 +7669,20 @@ function App() {
                       emailed++;
                     } else failed.push("".concat(inv.number, " (").concat(r.error, ")"));
                   case 2:
-                    return _context11.a(2);
+                    return _context12.a(2);
                 }
               }, _loop);
             });
             k = 0;
           case 1:
             if (!(k < newInvs.length)) {
-              _context12.n = 3;
+              _context13.n = 3;
               break;
             }
-            return _context12.d(_regeneratorValues(_loop()), 2);
+            return _context13.d(_regeneratorValues(_loop()), 2);
           case 2:
             k++;
-            _context12.n = 1;
+            _context13.n = 1;
             break;
           case 3:
             save("invoices", [].concat(_toConsumableArray(data.invoices), newInvs));
@@ -7261,15 +7690,15 @@ function App() {
             save("recurring", (data.recurring || []).map(function (t) {
               return recMap[t.id] || t;
             }));
-            return _context12.a(2, {
+            return _context13.a(2, {
               created: newInvs.length,
               emailed: emailed,
               failed: failed
             });
         }
-      }, _callee11);
+      }, _callee12);
     }));
-    function generateRecurring(_x11, _x12, _x13) {
+    function generateRecurring(_x18, _x19, _x20) {
       return _generateRecurring.apply(this, arguments);
     }
     return generateRecurring;
@@ -7298,9 +7727,9 @@ function App() {
     background: "transparent",
     border: "1px solid ".concat(T.line),
     borderRadius: 8,
-    padding: "0 9px",
-    minHeight: 38,
-    minWidth: 38,
+    padding: "0 6px",
+    minHeight: 36,
+    minWidth: 36,
     color: T.mid,
     cursor: "pointer",
     display: "flex",
@@ -7337,16 +7766,18 @@ function App() {
       fontWeight: 700,
       color: T.text,
       letterSpacing: "-0.01em",
-      whiteSpace: "nowrap"
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis"
     }
-  }, "Pleasantview Books"), /*#__PURE__*/React.createElement("div", {
+  }, "Pleasantview"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
       color: T.dim,
       letterSpacing: "0.14em",
       textTransform: "uppercase"
     }
-  }, "Accounting")), ro ? /*#__PURE__*/React.createElement("button", {
+  }, "Books")), ro ? /*#__PURE__*/React.createElement("button", {
     onClick: lock,
     "aria-label": "Exit",
     style: {
@@ -7371,7 +7802,8 @@ function App() {
       display: "flex",
       alignItems: "center",
       gap: 4,
-      flexShrink: 0
+      flexShrink: 0,
+      marginLeft: 8
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: doSync,
@@ -7531,11 +7963,11 @@ function App() {
       display: "grid",
       gridTemplateColumns: "repeat(".concat(tabs.length, ",1fr)")
     }
-  }, tabs.map(function (_ref47) {
-    var _ref48 = _slicedToArray(_ref47, 3),
-      id = _ref48[0],
-      ic = _ref48[1],
-      label = _ref48[2];
+  }, tabs.map(function (_ref48) {
+    var _ref49 = _slicedToArray(_ref48, 3),
+      id = _ref49[0],
+      ic = _ref49[1],
+      label = _ref49[2];
     return /*#__PURE__*/React.createElement("button", {
       key: id,
       onClick: function onClick() {
@@ -7741,14 +8173,14 @@ function sheetXml(t) {
   }).join(""), "</cols>");
   return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetViews><sheetView workbookViewId=\"0\"><pane ySplit=\"1\" topLeftCell=\"A2\" activePane=\"bottomLeft\" state=\"frozen\"/></sheetView></sheetViews>".concat(cols, "<sheetData>").concat(rows, "</sheetData>").concat(t.rows.length > 1 && !t.summary ? "<autoFilter ref=\"A1:".concat(colName(nc - 1)).concat(last, "\"/>") : "", "</worksheet>");
 }
-function buildXlsx(_x14) {
+function buildXlsx(_x21) {
   return _buildXlsx.apply(this, arguments);
 }
 function _buildXlsx() {
-  _buildXlsx = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee21(tables) {
+  _buildXlsx = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee27(tables) {
     var z, names;
-    return _regenerator().w(function (_context22) {
-      while (1) switch (_context22.n) {
+    return _regenerator().w(function (_context28) {
+      while (1) switch (_context28.n) {
         case 0:
           z = new window.JSZip();
           names = tables.map(function (t) {
@@ -7768,12 +8200,12 @@ function _buildXlsx() {
           tables.forEach(function (t, i) {
             return z.file("xl/worksheets/sheet".concat(i + 1, ".xml"), sheetXml(t));
           });
-          return _context22.a(2, z.generateAsync({
+          return _context28.a(2, z.generateAsync({
             type: "uint8array",
             compression: "DEFLATE"
           }));
       }
-    }, _callee21);
+    }, _callee27);
   }));
   return _buildXlsx.apply(this, arguments);
 }
@@ -7852,10 +8284,10 @@ function computeYearEnd(data, start, end) {
     k.hst += h;
     k.n++;
   });
-  var cats = Object.entries(byCat).map(function (_ref49) {
-    var _ref50 = _slicedToArray(_ref49, 2),
-      cat = _ref50[0],
-      v = _ref50[1];
+  var cats = Object.entries(byCat).map(function (_ref50) {
+    var _ref51 = _slicedToArray(_ref50, 2),
+      cat = _ref51[0],
+      v = _ref51[1];
     return {
       cat: cat,
       gross: r2(v.gross),
@@ -8054,10 +8486,10 @@ function yearEndPdf(data, R, start, end, label) {
   });
   Object.entries(R.byCust).sort(function (a, b) {
     return b[1] - a[1];
-  }).slice(0, 12).forEach(function (_ref51) {
-    var _ref52 = _slicedToArray(_ref51, 2),
-      n = _ref52[0],
-      v = _ref52[1];
+  }).slice(0, 12).forEach(function (_ref52) {
+    var _ref53 = _slicedToArray(_ref52, 2),
+      n = _ref53[0],
+      v = _ref53[1];
     return line(n, money(r2(v)), {
       indent: 14,
       color: D
@@ -8247,10 +8679,10 @@ function yearEndPdf(data, R, start, end, label) {
       bold: true,
       rule: true
     });
-    Object.entries(R.buckets).forEach(function (_ref53) {
-      var _ref54 = _slicedToArray(_ref53, 2),
-        k = _ref54[0],
-        v = _ref54[1];
+    Object.entries(R.buckets).forEach(function (_ref54) {
+      var _ref55 = _slicedToArray(_ref54, 2),
+        k = _ref55[0],
+        v = _ref55[1];
       return v > 0 && line(k, money(r2(v)), {
         indent: 14,
         color: D
@@ -8287,47 +8719,47 @@ function yearEndPdf(data, R, start, end, label) {
   foot();
   return doc;
 }
-function fetchBlob(_x15) {
+function fetchBlob(_x22) {
   return _fetchBlob.apply(this, arguments);
 }
 function _fetchBlob() {
-  _fetchBlob = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee22(url) {
-    var r, _t10;
-    return _regenerator().w(function (_context23) {
-      while (1) switch (_context23.p = _context23.n) {
+  _fetchBlob = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee28(url) {
+    var r, _t20;
+    return _regenerator().w(function (_context29) {
+      while (1) switch (_context29.p = _context29.n) {
         case 0:
-          _context23.p = 0;
-          _context23.n = 1;
+          _context29.p = 0;
+          _context29.n = 1;
           return fetch(url);
         case 1:
-          r = _context23.v;
+          r = _context29.v;
           if (r.ok) {
-            _context23.n = 2;
+            _context29.n = 2;
             break;
           }
-          return _context23.a(2, null);
+          return _context29.a(2, null);
         case 2:
-          _context23.n = 3;
+          _context29.n = 3;
           return r.blob();
         case 3:
-          return _context23.a(2, _context23.v);
+          return _context29.a(2, _context29.v);
         case 4:
-          _context23.p = 4;
-          _t10 = _context23.v;
-          return _context23.a(2, null);
+          _context29.p = 4;
+          _t20 = _context29.v;
+          return _context29.a(2, null);
       }
-    }, _callee22, null, [[0, 4]]);
+    }, _callee28, null, [[0, 4]]);
   }));
   return _fetchBlob.apply(this, arguments);
 }
-function buildYearEndZip(_x16, _x17, _x18, _x19) {
+function buildYearEndZip(_x23, _x24, _x25, _x26) {
   return _buildYearEndZip.apply(this, arguments);
 }
 function _buildYearEndZip() {
-  _buildYearEndZip = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee23(data, which, opts, progress) {
-    var _fyRangeFor, start, end, label, R, s, zip, root, custName, recName, n2, tables, summaryRows, invCount, recOk, recFail, f, _iterator, _step, _loop3, _f, list, n, _iterator2, _step2, e, b, blob, _t11, _t12, _t13, _t14;
-    return _regenerator().w(function (_context25) {
-      while (1) switch (_context25.p = _context25.n) {
+  _buildYearEndZip = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee29(data, which, opts, progress) {
+    var _fyRangeFor, start, end, label, R, s, zip, root, custName, recName, n2, tables, summaryRows, invCount, recOk, recFail, f, _iterator, _step, _loop3, _f, list, n, _iterator2, _step2, e, b, blob, _t21, _t22, _t23, _t24;
+    return _regenerator().w(function (_context31) {
+      while (1) switch (_context31.p = _context31.n) {
         case 0:
           _fyRangeFor = fyRangeFor(which), start = _fyRangeFor.start, end = _fyRangeFor.end, label = _fyRangeFor.label;
           R = computeYearEnd(data, start, end);
@@ -8396,10 +8828,10 @@ function _buildYearEndZip() {
             sum: true,
             rows: Object.entries(R.byCust).sort(function (a, b) {
               return b[1] - a[1];
-            }).map(function (_ref90) {
-              var _ref91 = _slicedToArray(_ref90, 2),
-                n = _ref91[0],
-                v = _ref91[1];
+            }).map(function (_ref91) {
+              var _ref92 = _slicedToArray(_ref91, 2),
+                n = _ref92[0],
+                v = _ref92[1];
               return [n, r2(v)];
             })
           }, {
@@ -8440,9 +8872,9 @@ function _buildYearEndZip() {
           });
           summaryRows = [["Business", s.businessName], ["HST number", s.hstNumber || ""], ["Period", "".concat(start, " to ").concat(end)], ["", ""], ["Revenue before HST (invoice basis)", R.revAcc], ["Expenses net of HST", R.expNet], ["Net income before tax, CCA, payroll and adjustments", r2(R.revAcc - R.expNet)], ["", ""], ["Revenue before HST (cash basis, for comparison)", R.revCash], ["", ""], ["HST charged (invoice basis)", R.hstAcc], ["Input tax credits", R.itc], ["Net HST for year", r2(R.hstAcc - R.itc)], ["", ""], ["Receivables at year end (incl. HST)", R.arTotal], ["Expenses without a receipt", R.missingReceipts.length], ["", ""], ["Note", "GIFI codes are suggestions. Included: general ledger, trial balance, payables, fixed assets and CCA schedule. Not tracked: payroll, subcontractor slips, loan balances, bank reconciliation."]];
           progress("Building Excel workbook…");
-          _t11 = root;
-          _t12 = "".concat(label, "-Year-End-Workbook.xlsx");
-          _context25.n = 1;
+          _t21 = root;
+          _t22 = "".concat(label, "-Year-End-Workbook.xlsx");
+          _context31.n = 1;
           return buildXlsx([{
             sheet: "Summary",
             head: ["Item", "Value"],
@@ -8451,19 +8883,19 @@ function _buildYearEndZip() {
             summary: true
           }].concat(tables));
         case 1:
-          _t11.file.call(_t11, _t12, _context25.v);
+          _t21.file.call(_t21, _t22, _context31.v);
           invCount = 0, recOk = 0, recFail = 0;
           if (!opts.invoices) {
-            _context25.n = 8;
+            _context31.n = 8;
             break;
           }
           f = root.folder("invoices");
           _iterator = _createForOfIteratorHelper(R.issued);
-          _context25.p = 2;
+          _context31.p = 2;
           _loop3 = /*#__PURE__*/_regenerator().m(function _loop3() {
             var x, cust;
-            return _regenerator().w(function (_context24) {
-              while (1) switch (_context24.n) {
+            return _regenerator().w(function (_context30) {
+              while (1) switch (_context30.n) {
                 case 0:
                   x = _step.value;
                   progress("Invoice PDFs ".concat(++invCount, " of ").concat(R.issued.length, "\u2026"));
@@ -8477,40 +8909,40 @@ function _buildYearEndZip() {
                       s: s,
                       c: x.c
                     }).output("arraybuffer"));
-                  } catch (_unused14) {}
-                  _context24.n = 1;
+                  } catch (_unused20) {}
+                  _context30.n = 1;
                   return new Promise(function (r) {
                     return setTimeout(r, 0);
                   });
                 case 1:
-                  return _context24.a(2);
+                  return _context30.a(2);
               }
             }, _loop3);
           });
           _iterator.s();
         case 3:
           if ((_step = _iterator.n()).done) {
-            _context25.n = 5;
+            _context31.n = 5;
             break;
           }
-          return _context25.d(_regeneratorValues(_loop3()), 4);
+          return _context31.d(_regeneratorValues(_loop3()), 4);
         case 4:
-          _context25.n = 3;
+          _context31.n = 3;
           break;
         case 5:
-          _context25.n = 7;
+          _context31.n = 7;
           break;
         case 6:
-          _context25.p = 6;
-          _t13 = _context25.v;
-          _iterator.e(_t13);
+          _context31.p = 6;
+          _t23 = _context31.v;
+          _iterator.e(_t23);
         case 7:
-          _context25.p = 7;
+          _context31.p = 7;
           _iterator.f();
-          return _context25.f(7);
+          return _context31.f(7);
         case 8:
           if (!opts.receipts) {
-            _context25.n = 16;
+            _context31.n = 16;
             break;
           }
           _f = root.folder("receipts");
@@ -8519,41 +8951,41 @@ function _buildYearEndZip() {
           });
           n = 0;
           _iterator2 = _createForOfIteratorHelper(list);
-          _context25.p = 9;
+          _context31.p = 9;
           _iterator2.s();
         case 10:
           if ((_step2 = _iterator2.n()).done) {
-            _context25.n = 13;
+            _context31.n = 13;
             break;
           }
           e = _step2.value;
           progress("Receipt photos ".concat(++n, " of ").concat(list.length, "\u2026"));
-          _context25.n = 11;
+          _context31.n = 11;
           return fetchBlob(e.receipt);
         case 11:
-          b = _context25.v;
+          b = _context31.v;
           if (b) {
             _f.file(recName.get(e.id).replace("receipts/", ""), b);
             recOk++;
           } else recFail++;
         case 12:
-          _context25.n = 10;
+          _context31.n = 10;
           break;
         case 13:
-          _context25.n = 15;
+          _context31.n = 15;
           break;
         case 14:
-          _context25.p = 14;
-          _t14 = _context25.v;
-          _iterator2.e(_t14);
+          _context31.p = 14;
+          _t24 = _context31.v;
+          _iterator2.e(_t24);
         case 15:
-          _context25.p = 15;
+          _context31.p = 15;
           _iterator2.f();
-          return _context25.f(15);
+          return _context31.f(15);
         case 16:
           root.file("README.txt", "Pleasantview Property Services \u2014 ".concat(label, " year-end package\nPeriod: ").concat(start, " to ").concat(end, "\nCreated: ").concat(todayStr(), "\n\n").concat(label, "-Year-End-Workbook.xlsx   ALL the data in one Excel workbook, one tab per list, with totals and filters\n00-Summary-").concat(label, ".pdf   Income statement, HST summary, expenses by category, receivables at year end, items to review\ninvoices.csv             Invoices dated in the year (excludes drafts)\npayments.csv             Payments received in the year, split into revenue and HST\nexpenses.csv             Every expense with suggested GIFI code, HST and receipt file name\nexpenses-by-category.csv Totals by category\nsales-by-customer.csv    Revenue before HST by customer\nhst-summary.csv          HST charged, input tax credits and net\nreceivables-at-").concat(end, ".csv  Unpaid invoices at year end with aging\nmissing-receipts.csv     Expenses with no receipt photo\ncustomers.csv            Customer list\n").concat(opts.invoices ? "invoices/                Invoice PDFs\n" : "").concat(opts.receipts ? "receipts/                Receipt photos\n" : "", "\nRevenue and HST are on an invoice-date basis. GIFI codes are suggestions for the accountant to confirm.\nNot tracked in this app: payroll, subcontractor slips, fixed assets/CCA, loan balances, shareholder transactions, bank reconciliation.\n"));
           progress("Zipping…");
-          _context25.n = 17;
+          _context31.n = 17;
           return zip.generateAsync({
             type: "blob",
             compression: "DEFLATE",
@@ -8562,8 +8994,8 @@ function _buildYearEndZip() {
             }
           });
         case 17:
-          blob = _context25.v;
-          return _context25.a(2, {
+          blob = _context31.v;
+          return _context31.a(2, {
             blob: blob,
             name: "Pleasantview-".concat(label, "-Year-End-Package.zip"),
             label: label,
@@ -8581,74 +9013,74 @@ function _buildYearEndZip() {
             R: R
           });
       }
-    }, _callee23, null, [[9, 14, 15, 16], [2, 6, 7, 8]]);
+    }, _callee29, null, [[9, 14, 15, 16], [2, 6, 7, 8]]);
   }));
   return _buildYearEndZip.apply(this, arguments);
 }
-function YearEndSheet(_ref55) {
-  var data = _ref55.data,
-    onClose = _ref55.onClose;
+function YearEndSheet(_ref56) {
+  var data = _ref56.data,
+    onClose = _ref56.onClose;
   var cur = fyRangeFor("current"),
     last = fyRangeFor("last");
-  var _useState123 = useState("last"),
-    _useState124 = _slicedToArray(_useState123, 2),
-    which = _useState124[0],
-    setWhich = _useState124[1];
-  var _useState125 = useState(true),
-    _useState126 = _slicedToArray(_useState125, 2),
-    inv = _useState126[0],
-    setInv = _useState126[1];
-  var _useState127 = useState(true),
+  var _useState127 = useState("last"),
     _useState128 = _slicedToArray(_useState127, 2),
-    rec = _useState128[0],
-    setRec = _useState128[1];
-  var _useState129 = useState(false),
+    which = _useState128[0],
+    setWhich = _useState128[1];
+  var _useState129 = useState(true),
     _useState130 = _slicedToArray(_useState129, 2),
-    busy = _useState130[0],
-    setBusy = _useState130[1];
-  var _useState131 = useState(""),
+    inv = _useState130[0],
+    setInv = _useState130[1];
+  var _useState131 = useState(true),
     _useState132 = _slicedToArray(_useState131, 2),
-    msg = _useState132[0],
-    setMsg = _useState132[1];
-  var _useState133 = useState(null),
+    rec = _useState132[0],
+    setRec = _useState132[1];
+  var _useState133 = useState(false),
     _useState134 = _slicedToArray(_useState133, 2),
-    res = _useState134[0],
-    setRes = _useState134[1];
+    busy = _useState134[0],
+    setBusy = _useState134[1];
   var _useState135 = useState(""),
     _useState136 = _slicedToArray(_useState135, 2),
-    err = _useState136[0],
-    setErr = _useState136[1];
+    msg = _useState136[0],
+    setMsg = _useState136[1];
+  var _useState137 = useState(null),
+    _useState138 = _slicedToArray(_useState137, 2),
+    res = _useState138[0],
+    setRes = _useState138[1];
+  var _useState139 = useState(""),
+    _useState140 = _slicedToArray(_useState139, 2),
+    err = _useState140[0],
+    setErr = _useState140[1];
   var build = /*#__PURE__*/function () {
-    var _build = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
-      var r, _t3;
-      return _regenerator().w(function (_context13) {
-        while (1) switch (_context13.p = _context13.n) {
+    var _build = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13() {
+      var r, _t5;
+      return _regenerator().w(function (_context14) {
+        while (1) switch (_context14.p = _context14.n) {
           case 0:
             setBusy(true);
             setErr("");
             setRes(null);
-            _context13.p = 1;
-            _context13.n = 2;
+            _context14.p = 1;
+            _context14.n = 2;
             return buildYearEndZip(data, which, {
               invoices: inv,
               receipts: rec
             }, setMsg);
           case 2:
-            r = _context13.v;
+            r = _context14.v;
             setRes(r);
-            _context13.n = 4;
+            _context14.n = 4;
             break;
           case 3:
-            _context13.p = 3;
-            _t3 = _context13.v;
-            setErr("Could not build the package: " + (_t3 && _t3.message || _t3));
+            _context14.p = 3;
+            _t5 = _context14.v;
+            setErr("Could not build the package: " + (_t5 && _t5.message || _t5));
           case 4:
             setBusy(false);
             setMsg("");
           case 5:
-            return _context13.a(2);
+            return _context14.a(2);
         }
-      }, _callee12, null, [[1, 3]]);
+      }, _callee13, null, [[1, 3]]);
     }));
     function build() {
       return _build.apply(this, arguments);
@@ -8879,12 +9311,12 @@ var recTotal = function recTotal(t) {
   var tax = t.taxOn ? sub * (parseFloat(t.taxRate) || 0) / 100 : 0;
   return r2(sub + tax);
 };
-function RecurringEditor(_ref56) {
-  var data = _ref56.data,
-    seed = _ref56.seed,
-    onClose = _ref56.onClose,
-    onSave = _ref56.onSave,
-    onDelete = _ref56.onDelete;
+function RecurringEditor(_ref57) {
+  var data = _ref57.data,
+    seed = _ref57.seed,
+    onClose = _ref57.onClose,
+    onSave = _ref57.onSave,
+    onDelete = _ref57.onDelete;
   var s = data.settings;
   var blank = function blank() {
     var _data$customers$2;
@@ -8911,12 +9343,12 @@ function RecurringEditor(_ref56) {
       isNew: true
     };
   };
-  var _useState137 = useState(function () {
+  var _useState141 = useState(function () {
       return seed ? JSON.parse(JSON.stringify(seed)) : blank();
     }),
-    _useState138 = _slicedToArray(_useState137, 2),
-    f = _useState138[0],
-    setF = _useState138[1];
+    _useState142 = _slicedToArray(_useState141, 2),
+    f = _useState142[0],
+    setF = _useState142[1];
   var set = function set(k, v) {
     return setF(function (p) {
       return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, k, v));
@@ -9108,10 +9540,10 @@ function RecurringEditor(_ref56) {
     onChange: function onChange(e) {
       return set("frequency", e.target.value);
     },
-    options: Object.entries(FREQS).map(function (_ref57) {
-      var _ref58 = _slicedToArray(_ref57, 2),
-        v = _ref58[0],
-        l = _ref58[1];
+    options: Object.entries(FREQS).map(function (_ref58) {
+      var _ref59 = _slicedToArray(_ref58, 2),
+        v = _ref59[0],
+        l = _ref59[1];
       return {
         v: v,
         l: l
@@ -9191,14 +9623,14 @@ function RecurringEditor(_ref56) {
     size: 16
   }), " Delete recurring invoice"));
 }
-function RecurringList(_ref59) {
-  var data = _ref59.data,
-    save = _ref59.save,
-    onClose = _ref59.onClose,
-    onEdit = _ref59.onEdit,
-    onNew = _ref59.onNew,
-    onDue = _ref59.onDue,
-    ro = _ref59.ro;
+function RecurringList(_ref60) {
+  var data = _ref60.data,
+    save = _ref60.save,
+    onClose = _ref60.onClose,
+    onEdit = _ref60.onEdit,
+    onNew = _ref60.onNew,
+    onDue = _ref60.onDue,
+    ro = _ref60.ro;
   var list = _toConsumableArray(data.recurring || []).sort(function (a, b) {
     return (a.nextDate || "").localeCompare(b.nextDate || "");
   });
@@ -9349,10 +9781,10 @@ function RecurringList(_ref59) {
     }, "Skip next")));
   })));
 }
-function RecurringDue(_ref60) {
-  var data = _ref60.data,
-    onClose = _ref60.onClose,
-    onCreate = _ref60.onCreate;
+function RecurringDue(_ref61) {
+  var data = _ref61.data,
+    onClose = _ref61.onClose,
+    onCreate = _ref61.onCreate;
   var items = (data.recurring || []).map(function (t) {
     return {
       t: t,
@@ -9366,26 +9798,26 @@ function RecurringDue(_ref60) {
       return c.id === id;
     })) || "No customer";
   };
-  var _useState139 = useState({}),
-    _useState140 = _slicedToArray(_useState139, 2),
-    off = _useState140[0],
-    setOff = _useState140[1];
-  var _useState141 = useState(false),
-    _useState142 = _slicedToArray(_useState141, 2),
-    email = _useState142[0],
-    setEmail = _useState142[1];
-  var _useState143 = useState(false),
+  var _useState143 = useState({}),
     _useState144 = _slicedToArray(_useState143, 2),
-    busy = _useState144[0],
-    setBusy = _useState144[1];
-  var _useState145 = useState(""),
+    off = _useState144[0],
+    setOff = _useState144[1];
+  var _useState145 = useState(false),
     _useState146 = _slicedToArray(_useState145, 2),
-    msg = _useState146[0],
-    setMsg = _useState146[1];
-  var _useState147 = useState(null),
+    email = _useState146[0],
+    setEmail = _useState146[1];
+  var _useState147 = useState(false),
     _useState148 = _slicedToArray(_useState147, 2),
-    res = _useState148[0],
-    setRes = _useState148[1];
+    busy = _useState148[0],
+    setBusy = _useState148[1];
+  var _useState149 = useState(""),
+    _useState150 = _slicedToArray(_useState149, 2),
+    msg = _useState150[0],
+    setMsg = _useState150[1];
+  var _useState151 = useState(null),
+    _useState152 = _slicedToArray(_useState151, 2),
+    res = _useState152[0],
+    setRes = _useState152[1];
   var chosen = items.filter(function (x) {
     return !off[x.t.id];
   });
@@ -9401,22 +9833,22 @@ function RecurringDue(_ref60) {
     }) || {}).email;
   });
   var go = /*#__PURE__*/function () {
-    var _go2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13() {
+    var _go2 = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14() {
       var r;
-      return _regenerator().w(function (_context14) {
-        while (1) switch (_context14.n) {
+      return _regenerator().w(function (_context15) {
+        while (1) switch (_context15.n) {
           case 0:
             setBusy(true);
-            _context14.n = 1;
+            _context15.n = 1;
             return onCreate(chosen, email, setMsg);
           case 1:
-            r = _context14.v;
+            r = _context15.v;
             setBusy(false);
             setRes(r);
           case 2:
-            return _context14.a(2);
+            return _context15.a(2);
         }
-      }, _callee13);
+      }, _callee14);
     }));
     function go() {
       return _go2.apply(this, arguments);
@@ -9477,9 +9909,9 @@ function RecurringDue(_ref60) {
       gap: 8,
       marginBottom: 14
     }
-  }, items.map(function (_ref61) {
-    var t = _ref61.t,
-      dates = _ref61.dates;
+  }, items.map(function (_ref62) {
+    var t = _ref62.t,
+      dates = _ref62.dates;
     return /*#__PURE__*/React.createElement("label", {
       key: t.id,
       style: {
@@ -9563,18 +9995,18 @@ function RecurringDue(_ref60) {
     }
   }, "Drafts are safest: check them, then send from each invoice. Your invoice numbers continue in order."));
 }
-function RecurringHub(_ref62) {
-  var data = _ref62.data,
-    save = _ref62.save,
-    view = _ref62.view,
-    setView = _ref62.setView,
-    onCreate = _ref62.onCreate,
-    ro = _ref62.ro,
-    seed = _ref62.seed;
-  var _useState149 = useState(seed || null),
-    _useState150 = _slicedToArray(_useState149, 2),
-    edit = _useState150[0],
-    setEdit = _useState150[1];
+function RecurringHub(_ref63) {
+  var data = _ref63.data,
+    save = _ref63.save,
+    view = _ref63.view,
+    setView = _ref63.setView,
+    onCreate = _ref63.onCreate,
+    ro = _ref63.ro,
+    seed = _ref63.seed;
+  var _useState153 = useState(seed || null),
+    _useState154 = _slicedToArray(_useState153, 2),
+    edit = _useState154[0],
+    setEdit = _useState154[1];
   var close = function close() {
     setEdit(null);
     setView(null);
@@ -9888,11 +10320,11 @@ function buildLedger(data) {
     })) || "No customer";
   };
   var add = function add(date, memo, src, lines, ref) {
-    var ls = lines.map(function (_ref63) {
-      var _ref64 = _slicedToArray(_ref63, 3),
-        a = _ref64[0],
-        d = _ref64[1],
-        c = _ref64[2];
+    var ls = lines.map(function (_ref64) {
+      var _ref65 = _slicedToArray(_ref64, 3),
+        a = _ref65[0],
+        d = _ref65[1],
+        c = _ref65[2];
       return {
         a: a,
         d: r2(d || 0),
@@ -10236,8 +10668,8 @@ var tdS = {
   borderBottom: "1px solid ".concat(T.line),
   color: T.mid
 };
-var Tbl = function Tbl(_ref65) {
-  var children = _ref65.children;
+var Tbl = function Tbl(_ref66) {
+  var children = _ref66.children;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       overflowX: "auto",
@@ -10254,11 +10686,11 @@ var Tbl = function Tbl(_ref65) {
 var amt = function amt(n) {
   return Math.abs(n) > 0.004 ? money(n) : "–";
 };
-var BackBar = function BackBar(_ref66) {
-  var title = _ref66.title,
-    sub = _ref66.sub,
-    back = _ref66.back,
-    right = _ref66.right;
+var BackBar = function BackBar(_ref67) {
+  var title = _ref67.title,
+    sub = _ref67.sub,
+    back = _ref67.back,
+    right = _ref67.right;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 14
@@ -10310,9 +10742,9 @@ var periodEnds = function periodEnds(per) {
     b = _periodRange4[1];
   return [a, b > todayStr() ? todayStr() : b];
 };
-var AgeTable = function AgeTable(_ref67) {
-  var rows = _ref67.rows,
-    label = _ref67.label;
+var AgeTable = function AgeTable(_ref68) {
+  var rows = _ref68.rows,
+    label = _ref68.label;
   return /*#__PURE__*/React.createElement(Tbl, null, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
     style: _objectSpread(_objectSpread({}, thS), {}, {
       textAlign: "left"
@@ -10376,11 +10808,11 @@ var AgeTable = function AgeTable(_ref67) {
 };
 
 // ── Accounts receivable ──────────────────────────────────────────────────────
-function ReceivableView(_ref68) {
-  var data = _ref68.data,
-    E = _ref68.E,
-    back = _ref68.back,
-    openInvoice = _ref68.openInvoice;
+function ReceivableView(_ref69) {
+  var data = _ref69.data,
+    E = _ref69.E,
+    back = _ref69.back,
+    openInvoice = _ref69.openInvoice;
   var items = arItems(data);
   var rows = sumBy(items, "cid");
   var total = r2(items.reduce(function (t, x) {
@@ -10396,10 +10828,10 @@ function ReceivableView(_ref68) {
     }, 0);
   }, 0));
   var ties = Math.abs(gl - total) < 0.01;
-  var _useState151 = useState(null),
-    _useState152 = _slicedToArray(_useState151, 2),
-    open = _useState152[0],
-    setOpen = _useState152[1];
+  var _useState155 = useState(null),
+    _useState156 = _slicedToArray(_useState155, 2),
+    open = _useState156[0],
+    setOpen = _useState156[1];
   var list = open == null ? items : items.filter(function (x) {
     return x.cid === open;
   });
@@ -10506,26 +10938,26 @@ function ReceivableView(_ref68) {
 }
 
 // ── Accounts payable (bills) ─────────────────────────────────────────────────
-function PayBillSheet(_ref69) {
-  var bill = _ref69.bill,
-    onSave = _ref69.onSave,
-    onClose = _ref69.onClose;
+function PayBillSheet(_ref70) {
+  var bill = _ref70.bill,
+    onSave = _ref70.onSave,
+    onClose = _ref70.onClose;
   var paid = r2((bill.payments || []).reduce(function (t, p) {
     return t + (parseFloat(p.amount) || 0);
   }, 0));
   var bal = r2((parseFloat(bill.amount) || 0) - paid);
-  var _useState153 = useState(todayStr()),
-    _useState154 = _slicedToArray(_useState153, 2),
-    date = _useState154[0],
-    setDate = _useState154[1];
-  var _useState155 = useState(String(Math.max(bal, 0))),
-    _useState156 = _slicedToArray(_useState155, 2),
-    amount = _useState156[0],
-    setAmount = _useState156[1];
-  var _useState157 = useState("Bank transfer"),
+  var _useState157 = useState(todayStr()),
     _useState158 = _slicedToArray(_useState157, 2),
-    method = _useState158[0],
-    setMethod = _useState158[1];
+    date = _useState158[0],
+    setDate = _useState158[1];
+  var _useState159 = useState(String(Math.max(bal, 0))),
+    _useState160 = _slicedToArray(_useState159, 2),
+    amount = _useState160[0],
+    setAmount = _useState160[1];
+  var _useState161 = useState("Bank transfer"),
+    _useState162 = _slicedToArray(_useState161, 2),
+    method = _useState162[0],
+    setMethod = _useState162[1];
   var ok = (parseFloat(amount) || 0) > 0;
   return /*#__PURE__*/React.createElement(Sheet, {
     title: "Pay ".concat(bill.vendor || bill.category),
@@ -10660,27 +11092,27 @@ function PayBillSheet(_ref69) {
     }))));
   })));
 }
-function PayableView(_ref70) {
-  var data = _ref70.data,
-    save = _ref70.save,
-    ro = _ref70.ro,
-    back = _ref70.back;
-  var _useState159 = useState("unpaid"),
-    _useState160 = _slicedToArray(_useState159, 2),
-    f = _useState160[0],
-    setF = _useState160[1];
-  var _useState161 = useState(null),
-    _useState162 = _slicedToArray(_useState161, 2),
-    pay = _useState162[0],
-    setPay = _useState162[1];
-  var _useState163 = useState(null),
+function PayableView(_ref71) {
+  var data = _ref71.data,
+    save = _ref71.save,
+    ro = _ref71.ro,
+    back = _ref71.back;
+  var _useState163 = useState("unpaid"),
     _useState164 = _slicedToArray(_useState163, 2),
-    edit = _useState164[0],
-    setEdit = _useState164[1];
+    f = _useState164[0],
+    setF = _useState164[1];
   var _useState165 = useState(null),
     _useState166 = _slicedToArray(_useState165, 2),
-    del = _useState166[0],
-    setDel = _useState166[1];
+    pay = _useState166[0],
+    setPay = _useState166[1];
+  var _useState167 = useState(null),
+    _useState168 = _slicedToArray(_useState167, 2),
+    edit = _useState168[0],
+    setEdit = _useState168[1];
+  var _useState169 = useState(null),
+    _useState170 = _slicedToArray(_useState169, 2),
+    del = _useState170[0],
+    setDel = _useState170[1];
   var items = apItems(data);
   var total = r2(items.reduce(function (t, x) {
     return t + x.bal;
@@ -10797,12 +11229,12 @@ function PayableView(_ref70) {
       display: "grid",
       gap: 8
     }
-  }, bills.map(function (_ref71) {
-    var e = _ref71.e,
-      bal = _ref71.bal,
-      paid = _ref71.paid,
-      due = _ref71.due,
-      days = _ref71.days;
+  }, bills.map(function (_ref72) {
+    var e = _ref72.e,
+      bal = _ref72.bal,
+      paid = _ref72.paid,
+      due = _ref72.due,
+      days = _ref72.days;
     return /*#__PURE__*/React.createElement(Card, {
       key: e.id,
       onClick: function onClick() {
@@ -10921,20 +11353,20 @@ function PayableView(_ref70) {
 }
 
 // ── Fixed assets and CCA ─────────────────────────────────────────────────────
-function AssetEditor(_ref72) {
-  var a = _ref72.a,
-    defaultRate = _ref72.defaultRate,
-    onSave = _ref72.onSave,
-    onClose = _ref72.onClose,
-    onDelete = _ref72.onDelete;
-  var _useState167 = useState(a),
-    _useState168 = _slicedToArray(_useState167, 2),
-    f = _useState168[0],
-    setF = _useState168[1];
-  var _useState169 = useState(!!a.hst),
-    _useState170 = _slicedToArray(_useState169, 2),
-    hstTouched = _useState170[0],
-    setHstTouched = _useState170[1];
+function AssetEditor(_ref73) {
+  var a = _ref73.a,
+    defaultRate = _ref73.defaultRate,
+    onSave = _ref73.onSave,
+    onClose = _ref73.onClose,
+    onDelete = _ref73.onDelete;
+  var _useState171 = useState(a),
+    _useState172 = _slicedToArray(_useState171, 2),
+    f = _useState172[0],
+    setF = _useState172[1];
+  var _useState173 = useState(!!a.hst),
+    _useState174 = _slicedToArray(_useState173, 2),
+    hstTouched = _useState174[0],
+    setHstTouched = _useState174[1];
   var set = function set(k, v) {
     return setF(function (p) {
       return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, k, v));
@@ -11128,26 +11560,26 @@ function AssetEditor(_ref72) {
     size: 16
   }), " Delete asset"));
 }
-function OpeningUccSheet(_ref73) {
-  var data = _ref73.data,
-    save = _ref73.save,
-    onClose = _ref73.onClose;
-  var _useState171 = useState(data.settings.uccOpen || {}),
-    _useState172 = _slicedToArray(_useState171, 2),
-    map = _useState172[0],
-    setMap = _useState172[1];
-  var _useState173 = useState("8"),
-    _useState174 = _slicedToArray(_useState173, 2),
-    cls = _useState174[0],
-    setCls = _useState174[1];
-  var _useState175 = useState(String(fyOf(todayStr()))),
+function OpeningUccSheet(_ref74) {
+  var data = _ref74.data,
+    save = _ref74.save,
+    onClose = _ref74.onClose;
+  var _useState175 = useState(data.settings.uccOpen || {}),
     _useState176 = _slicedToArray(_useState175, 2),
-    fy = _useState176[0],
-    setFy = _useState176[1];
-  var _useState177 = useState(""),
+    map = _useState176[0],
+    setMap = _useState176[1];
+  var _useState177 = useState("8"),
     _useState178 = _slicedToArray(_useState177, 2),
-    a = _useState178[0],
-    setA = _useState178[1];
+    cls = _useState178[0],
+    setCls = _useState178[1];
+  var _useState179 = useState(String(fyOf(todayStr()))),
+    _useState180 = _slicedToArray(_useState179, 2),
+    fy = _useState180[0],
+    setFy = _useState180[1];
+  var _useState181 = useState(""),
+    _useState182 = _slicedToArray(_useState181, 2),
+    a = _useState182[0],
+    setA = _useState182[1];
   var commit = function commit(m) {
     setMap(m);
     save("settings", _objectSpread(_objectSpread({}, data.settings), {}, {
@@ -11254,23 +11686,23 @@ function OpeningUccSheet(_ref73) {
     }
   }, "Save opening UCC"));
 }
-function AssetsView(_ref74) {
-  var data = _ref74.data,
-    save = _ref74.save,
-    ro = _ref74.ro,
-    back = _ref74.back;
-  var _useState179 = useState(null),
-    _useState180 = _slicedToArray(_useState179, 2),
-    edit = _useState180[0],
-    setEdit = _useState180[1];
-  var _useState181 = useState(null),
-    _useState182 = _slicedToArray(_useState181, 2),
-    del = _useState182[0],
-    setDel = _useState182[1];
-  var _useState183 = useState(false),
+function AssetsView(_ref75) {
+  var data = _ref75.data,
+    save = _ref75.save,
+    ro = _ref75.ro,
+    back = _ref75.back;
+  var _useState183 = useState(null),
     _useState184 = _slicedToArray(_useState183, 2),
-    uo = _useState184[0],
-    setUo = _useState184[1];
+    edit = _useState184[0],
+    setEdit = _useState184[1];
+  var _useState185 = useState(null),
+    _useState186 = _slicedToArray(_useState185, 2),
+    del = _useState186[0],
+    setDel = _useState186[1];
+  var _useState187 = useState(false),
+    _useState188 = _slicedToArray(_useState187, 2),
+    uo = _useState188[0],
+    setUo = _useState188[1];
   var sched = ccaSchedule(data);
   var fys = _toConsumableArray(new Set(sched.map(function (r) {
     return r.fy;
@@ -11278,10 +11710,10 @@ function AssetsView(_ref74) {
     return b - a;
   });
   var cur = fyOf(todayStr());
-  var _useState185 = useState(fys.includes(cur) ? cur : fys[0] || cur),
-    _useState186 = _slicedToArray(_useState185, 2),
-    fy = _useState186[0],
-    setFy = _useState186[1];
+  var _useState189 = useState(fys.includes(cur) ? cur : fys[0] || cur),
+    _useState190 = _slicedToArray(_useState189, 2),
+    fy = _useState190[0],
+    setFy = _useState190[1];
   var rows = sched.filter(function (r) {
     return r.fy === fy;
   });
@@ -11632,24 +12064,24 @@ function AssetsView(_ref74) {
 }
 
 // ── General ledger ───────────────────────────────────────────────────────────
-function LedgerView(_ref75) {
-  var data = _ref75.data,
-    E = _ref75.E,
-    back = _ref75.back;
+function LedgerView(_ref76) {
+  var data = _ref76.data,
+    E = _ref76.E,
+    back = _ref76.back;
   var am = acctMap(data.settings);
   var used = _toConsumableArray(new Set(E.flatMap(function (e) {
     return e.lines.map(function (l) {
       return l.a;
     });
   })));
-  var _useState187 = useState(used.includes("1000") ? "1000" : used[0] || "1000"),
-    _useState188 = _slicedToArray(_useState187, 2),
-    no = _useState188[0],
-    setNo = _useState188[1];
-  var _useState189 = useState("all"),
-    _useState190 = _slicedToArray(_useState189, 2),
-    per = _useState190[0],
-    setPer = _useState190[1];
+  var _useState191 = useState(used.includes("1000") ? "1000" : used[0] || "1000"),
+    _useState192 = _slicedToArray(_useState191, 2),
+    no = _useState192[0],
+    setNo = _useState192[1];
+  var _useState193 = useState("all"),
+    _useState194 = _slicedToArray(_useState193, 2),
+    per = _useState194[0],
+    setPer = _useState194[1];
   var _periodEnds = periodEnds(per),
     _periodEnds2 = _slicedToArray(_periodEnds, 2),
     from = _periodEnds2[0],
@@ -11682,9 +12114,9 @@ function LedgerView(_ref75) {
   });
   var run = sign(bal);
   var opening = run;
-  var out = lines.map(function (_ref76) {
-    var e = _ref76.e,
-      l = _ref76.l;
+  var out = lines.map(function (_ref77) {
+    var e = _ref77.e,
+      l = _ref77.l;
     run = r2(run + sign(l.d - l.c));
     return {
       e: e,
@@ -11823,14 +12255,14 @@ function LedgerView(_ref75) {
 }
 
 // ── Trial balance and financial statements ───────────────────────────────────
-function TrialView(_ref77) {
-  var data = _ref77.data,
-    E = _ref77.E,
-    back = _ref77.back;
-  var _useState191 = useState("ytd"),
-    _useState192 = _slicedToArray(_useState191, 2),
-    per = _useState192[0],
-    setPer = _useState192[1];
+function TrialView(_ref78) {
+  var data = _ref78.data,
+    E = _ref78.E,
+    back = _ref78.back;
+  var _useState195 = useState("ytd"),
+    _useState196 = _slicedToArray(_useState195, 2),
+    per = _useState196[0],
+    setPer = _useState196[1];
   var _periodEnds3 = periodEnds(per),
     _periodEnds4 = _slicedToArray(_periodEnds3, 2),
     from = _periodEnds4[0],
@@ -11911,14 +12343,14 @@ function TrialView(_ref77) {
     }
   }, "Income and expense accounts show this period only. Profit from earlier years is rolled into retained earnings.")));
 }
-function StatementsView(_ref78) {
-  var data = _ref78.data,
-    E = _ref78.E,
-    back = _ref78.back;
-  var _useState193 = useState("ytd"),
-    _useState194 = _slicedToArray(_useState193, 2),
-    per = _useState194[0],
-    setPer = _useState194[1];
+function StatementsView(_ref79) {
+  var data = _ref79.data,
+    E = _ref79.E,
+    back = _ref79.back;
+  var _useState197 = useState("ytd"),
+    _useState198 = _slicedToArray(_useState197, 2),
+    per = _useState198[0],
+    setPer = _useState198[1];
   var _periodEnds5 = periodEnds(per),
     _periodEnds6 = _slicedToArray(_periodEnds5, 2),
     from = _periodEnds6[0],
@@ -11958,11 +12390,11 @@ function StatementsView(_ref78) {
     eT = r2(-eq.reduce(function (t, r) {
       return t + net(r);
     }, 0) + ni);
-  var Line = function Line(_ref79) {
-    var a = _ref79.a,
-      b = _ref79.b,
-      bold = _ref79.bold,
-      color = _ref79.color;
+  var Line = function Line(_ref80) {
+    var a = _ref80.a,
+      b = _ref80.b,
+      bold = _ref80.bold,
+      color = _ref80.color;
     return /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -11981,9 +12413,9 @@ function StatementsView(_ref78) {
       }
     }, a), /*#__PURE__*/React.createElement("span", null, b));
   };
-  var Sec = function Sec(_ref80) {
-    var t = _ref80.t,
-      children = _ref80.children;
+  var Sec = function Sec(_ref81) {
+    var t = _ref81.t,
+      children = _ref81.children;
     return /*#__PURE__*/React.createElement(Card, {
       style: {
         marginBottom: 14
@@ -12085,16 +12517,16 @@ function StatementsView(_ref78) {
 }
 
 // ── Journal entries and chart of accounts ────────────────────────────────────
-function JournalEditor(_ref81) {
-  var j = _ref81.j,
-    accts = _ref81.accts,
-    onSave = _ref81.onSave,
-    onClose = _ref81.onClose,
-    onDelete = _ref81.onDelete;
-  var _useState195 = useState(j),
-    _useState196 = _slicedToArray(_useState195, 2),
-    f = _useState196[0],
-    setF = _useState196[1];
+function JournalEditor(_ref82) {
+  var j = _ref82.j,
+    accts = _ref82.accts,
+    onSave = _ref82.onSave,
+    onClose = _ref82.onClose,
+    onDelete = _ref82.onDelete;
+  var _useState199 = useState(j),
+    _useState200 = _slicedToArray(_useState199, 2),
+    f = _useState200[0],
+    setF = _useState200[1];
   var set = function set(k, v) {
     return setF(function (p) {
       return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, k, v));
@@ -12243,23 +12675,23 @@ function JournalEditor(_ref81) {
     size: 16
   }), " Delete entry"));
 }
-function JournalView(_ref82) {
-  var data = _ref82.data,
-    save = _ref82.save,
-    ro = _ref82.ro,
-    back = _ref82.back;
-  var _useState197 = useState(null),
-    _useState198 = _slicedToArray(_useState197, 2),
-    edit = _useState198[0],
-    setEdit = _useState198[1];
-  var _useState199 = useState(null),
-    _useState200 = _slicedToArray(_useState199, 2),
-    del = _useState200[0],
-    setDel = _useState200[1];
-  var _useState201 = useState(false),
+function JournalView(_ref83) {
+  var data = _ref83.data,
+    save = _ref83.save,
+    ro = _ref83.ro,
+    back = _ref83.back;
+  var _useState201 = useState(null),
     _useState202 = _slicedToArray(_useState201, 2),
-    coa = _useState202[0],
-    setCoa = _useState202[1];
+    edit = _useState202[0],
+    setEdit = _useState202[1];
+  var _useState203 = useState(null),
+    _useState204 = _slicedToArray(_useState203, 2),
+    del = _useState204[0],
+    setDel = _useState204[1];
+  var _useState205 = useState(false),
+    _useState206 = _slicedToArray(_useState205, 2),
+    coa = _useState206[0],
+    setCoa = _useState206[1];
   var list = (data.journal || []).slice().sort(function (a, b) {
     return b.date.localeCompare(a.date);
   });
@@ -12387,23 +12819,23 @@ function JournalView(_ref82) {
     }
   }));
 }
-function ChartSheet(_ref83) {
-  var data = _ref83.data,
-    save = _ref83.save,
-    ro = _ref83.ro,
-    onClose = _ref83.onClose;
-  var _useState203 = useState(""),
-    _useState204 = _slicedToArray(_useState203, 2),
-    no = _useState204[0],
-    setNo = _useState204[1];
-  var _useState205 = useState(""),
-    _useState206 = _slicedToArray(_useState205, 2),
-    name = _useState206[0],
-    setName = _useState206[1];
-  var _useState207 = useState("expense"),
+function ChartSheet(_ref84) {
+  var data = _ref84.data,
+    save = _ref84.save,
+    ro = _ref84.ro,
+    onClose = _ref84.onClose;
+  var _useState207 = useState(""),
     _useState208 = _slicedToArray(_useState207, 2),
-    type = _useState208[0],
-    setType = _useState208[1];
+    no = _useState208[0],
+    setNo = _useState208[1];
+  var _useState209 = useState(""),
+    _useState210 = _slicedToArray(_useState209, 2),
+    name = _useState210[0],
+    setName = _useState210[1];
+  var _useState211 = useState("expense"),
+    _useState212 = _slicedToArray(_useState211, 2),
+    type = _useState212[0],
+    setType = _useState212[1];
   var custom = data.settings.customAccounts || [];
   var ok = /^\d{4}$/.test(no) && name && !allAccts(data.settings).some(function (a) {
     return a.no === no;
@@ -12411,10 +12843,10 @@ function ChartSheet(_ref83) {
   return /*#__PURE__*/React.createElement(Sheet, {
     title: "Chart of accounts",
     onClose: onClose
-  }, ACCT_TYPES.map(function (_ref84) {
-    var _ref85 = _slicedToArray(_ref84, 2),
-      t = _ref85[0],
-      l = _ref85[1];
+  }, ACCT_TYPES.map(function (_ref85) {
+    var _ref86 = _slicedToArray(_ref85, 2),
+      t = _ref86[0],
+      l = _ref86[1];
     return /*#__PURE__*/React.createElement("div", {
       key: t,
       style: {
@@ -12491,10 +12923,10 @@ function ChartSheet(_ref83) {
     onChange: function onChange(e) {
       return setType(e.target.value);
     },
-    options: ACCT_TYPES.map(function (_ref86) {
-      var _ref87 = _slicedToArray(_ref86, 2),
-        v = _ref87[0],
-        l = _ref87[1];
+    options: ACCT_TYPES.map(function (_ref87) {
+      var _ref88 = _slicedToArray(_ref87, 2),
+        v = _ref88[0],
+        l = _ref88[1];
       return {
         v: v,
         l: l
@@ -12522,15 +12954,15 @@ function ChartSheet(_ref83) {
 }
 
 // ── Accounting hub ───────────────────────────────────────────────────────────
-function Accounting(_ref88) {
-  var data = _ref88.data,
-    save = _ref88.save,
-    ro = _ref88.ro,
-    openInvoice = _ref88.openInvoice;
-  var _useState209 = useState(null),
-    _useState210 = _slicedToArray(_useState209, 2),
-    view = _useState210[0],
-    setView = _useState210[1];
+function Accounting(_ref89) {
+  var data = _ref89.data,
+    save = _ref89.save,
+    ro = _ref89.ro,
+    openInvoice = _ref89.openInvoice;
+  var _useState213 = useState(null),
+    _useState214 = _slicedToArray(_useState213, 2),
+    view = _useState214[0],
+    setView = _useState214[1];
   var back = function back() {
     return setView(null);
   };
@@ -12589,12 +13021,12 @@ function Accounting(_ref88) {
     ro: ro,
     back: back
   });
-  var Tile = function Tile(_ref89) {
-    var id = _ref89.id,
-      title = _ref89.title,
-      value = _ref89.value,
-      sub = _ref89.sub,
-      color = _ref89.color;
+  var Tile = function Tile(_ref90) {
+    var id = _ref90.id,
+      title = _ref90.title,
+      value = _ref90.value,
+      sub = _ref90.sub,
+      color = _ref90.color;
     return /*#__PURE__*/React.createElement(Card, {
       onClick: function onClick() {
         return setView(id);
